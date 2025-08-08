@@ -17,14 +17,29 @@ public class SnakeRender : MonoBehaviour
     // private float bendRadius = 0.5f;
     private int bendSegments = 12;
     public int speed = 2;
-    private List<Vector3> targetPositions;
-    public List<Vector3> currentPositions;
-    private List<Vector3> currentDirections;
-    private List<GameObject> segments;
-
+    private int length;
+    private int indexOfvertex = 0;
+    // set up coordinates for vertice of right order
     private List<Vector3> coordinates = new List<Vector3>();
     private List<int> shape = new List<int>();
     private int turn = 0;
+    // create list of vertices for new algorithm that only update head and tail in list
+    private List<List<Vector3>> verticesOfSegment = new List<List<Vector3>>();
+    private List<List<Vector2>> uvsOfSegment = new List<List<Vector2>>();
+    private List<List<int>> trianglesOfSegment = new List<List<int>>();
+    private List<List<Vector3>> normalsOfSegment = new List<List<Vector3>>();
+
+    private List<GameObject> segments;
+    private List<Vector3> targetPositions;
+    public List<Vector3> currentPositions;
+    private List<Vector3> currentDirections;
+
+
+    
+
+   
+    
+    
     // private LinkedList<Vector3> forwardDirections;
 
 
@@ -39,20 +54,31 @@ public class SnakeRender : MonoBehaviour
             segments.Add(child.gameObject);
         }
 
-        int length = segments.Count;    
-        targetPositions = new List<Vector3>(length); 
-        
-        currentDirections = new List<Vector3>(length + 2);
-        Vector3 headdir = currentPositions[0]- currentPositions[1];
+        // initial targetposition and currentdirection
+         length = segments.Count;    
+        targetPositions = new List<Vector3>(length);
+        for (int i = 0; i < length; i++)
+        {
+            targetPositions.Add(Vector3.zero); 
+        }
+        currentDirections = new List<Vector3>(length);
+        Vector3 headdir = currentPositions[0]-currentPositions[1];
         currentDirections.Add(headdir) ;
-        currentDirections.Add(headdir) ;
-        for (int i = 2; i < length + 1; i++)
+        for (int i = 1; i < length; i++)
         {    
-            currentDirections.Add(currentPositions[i - 2] - currentPositions[i-1]);         
+            currentDirections.Add(currentPositions[i - 1] - currentPositions[i]);         
         }
 
-        Vector3 taildir = currentPositions[length - 2] - currentPositions[length - 1];
-        currentDirections.Add(taildir);
+
+
+        // initial elements of mesh
+        for (int i = 0; i < length; i++)
+        {
+           
+            verticesOfSegment.Add(new List<Vector3>());
+            trianglesOfSegment.Add(new List<int>());
+            normalsOfSegment.Add(new List<Vector3>());
+        }
 
         InitialSnake();
     }
@@ -99,16 +125,27 @@ public class SnakeRender : MonoBehaviour
             canMove = false;
             if (Vector3.Dot(snakeDirection, currentDirections[1]) < 0.5)
             {
-                turn = 1;
+                
                 turnAround = true;
                 Vector3 yAxis = currentDirections[1];
                 Vector3 xAxis = -snakeDirection;
                 Vector3 rAxis = Vector3.forward;
                 Vector3 axis = Vector3.Cross(xAxis, yAxis);
                 Vector3 origin = -0.5f * yAxis - 0.5f * xAxis + currentPositions[1];
-                coordinates[0] = origin;
-                coordinates[1] = xAxis;
-                coordinates[2] = yAxis;
+
+                if(Vector3.Dot(axis,rAxis) > 0)
+                {
+                    //left turn
+                    turn = 1;
+
+                }
+                else
+                {
+                    //right turn
+                    turn = 2;
+                }
+
+             //   indexOfvertex = indexOfvertex + numberOfVerticalSlice + 1;
                 coordinates[3] = origin;
                 coordinates[4] = xAxis;
                 coordinates[5] = yAxis;
@@ -173,15 +210,7 @@ public class SnakeRender : MonoBehaviour
                 {
                     int number = segmentsOfMove / speed;
                     Mesh mesh = new Mesh { name = "SegmentMesh" };
-                    List<Vector3> vertices = new List<Vector3>();
-                    List<int> triangles = new List<int>();
-                    List<Vector3> normals = new List<Vector3>();
-
                     Mesh headmesh = new Mesh { name = "SegmentHead" };
-                    List<Vector3> headVertices = new List<Vector3>();
-                    List<int> headTriangles = new List<int>();
-                    List<Vector3> HeadNormals = new List<Vector3>();
-
                     Vector3 axis = Vector3.forward;
                     float angle = number * 90 / numberOfHorizontalSlice;
 
@@ -189,27 +218,32 @@ public class SnakeRender : MonoBehaviour
                     Vector3 xAxis = coordinates[4];
                     Vector3 yAxis = coordinates[5];
                     if (turn == 1)
-                    {                     
-                        GenerateLeftBendMesh(vertices, triangles, normals, origin, xAxis, yAxis,
-                            0, number * bendSegments);
+                    {
+                        indexOfvertex = indexOfvertex + numberOfVerticalSlice + 1;
+                        for (int i = 1; i <= number; i++)
+                        {
+                            SetVerticesOfLeftTurn(verticesOfSegment[1], origin, xAxis, yAxis, i);
+                        }                       
                         xAxis = Quaternion.AngleAxis(angle, axis) * xAxis;
                         yAxis = Quaternion.AngleAxis(angle, axis) * yAxis;
-                        Vector3 startpoint =  xAxis * (1 - snakeWidth) / 2 + origin;
-                     
+                        Vector3 startpoint = xAxis * (1 - snakeWidth) / 2 + origin;
+                        for (int i = 1; i <= numberOfHorizontalSlice - number; i++)
+                        {
+                            SetVerticesOfStraitWalk(verticesOfSegment[1], startpoint, xAxis, yAxis, i);
+                        }
 
-                        GenerateRectangleMesh(vertices, triangles, normals, startpoint, xAxis, yAxis,
-                            numberOfHorizontalSlice - number);
+                        SetTriangelOfLeftTurn(trianglesOfSegment[1], numberOfVerticalSlice, numberOfHorizontalSlice);
 
-                        mesh.SetVertices(vertices);
-                        mesh.SetTriangles(triangles, 0);
-                        mesh.SetNormals(normals);
+                        mesh.SetVertices(verticesOfSegment[1]);
+                        mesh.SetTriangles(trianglesOfSegment[1], 0);
+                        mesh.SetNormals(normalsOfSegment[1]);
                         MeshFilter mf = segments[1].GetComponent<MeshFilter>();
                         MeshRenderer mr = segments[1].GetComponent<MeshRenderer>();
                         mf.mesh = mesh;
                         mr.material = material;
 
                         //create head of snake
-                        startpoint = xAxis * (1 - snakeWidth) / 2 + (1f -((float)number / numberOfHorizontalSlice)) * yAxis + coordinates[0];
+           /*             startpoint = xAxis * (1 - snakeWidth) / 2 + (1f - ((float)number / numberOfHorizontalSlice)) * yAxis + coordinates[0];
                         GenerateRectangleMesh(headVertices, headTriangles, HeadNormals, startpoint, xAxis, yAxis,
                             numberOfHorizontalSlice);
                         headmesh.SetVertices(headVertices);
@@ -218,7 +252,7 @@ public class SnakeRender : MonoBehaviour
                         MeshFilter headMf = segments[0].GetComponent<MeshFilter>();
                         MeshRenderer headMr = segments[0].GetComponent<MeshRenderer>();
                         headMf.mesh = headmesh;
-                        headMr.material = material;
+                        headMr.material = material;*/
                     }
                     else
                     {
@@ -226,7 +260,8 @@ public class SnakeRender : MonoBehaviour
                     }
 
 
-                }else
+                }
+                else
                 {
                     turnAround = false;
                     canMove = true;
@@ -234,37 +269,43 @@ public class SnakeRender : MonoBehaviour
                     segmentsOfMove = 0;
                 }
             }
-           
+
         }
     }
 
 
     private void InitialSnake()
     {
-       
-        float angle = 90;
-        Vector3 yAxis, xAxis,origin;
-        Vector3 rAxis = Vector3.back;
 
+      //  RenderHead();
+        coordinates.Add(Vector3.zero);
+        coordinates.Add(Vector3.zero);
+        coordinates.Add(Vector3.zero);
+        shape.Add(0);
+
+        // render body of snake
+        float angle = 90;
+        Vector3 yAxis, xAxis, origin;
+        Vector3 rAxis = Vector3.back;
         for (int i = 1; i < currentDirections.Count - 1; i++)
         {
             Vector3 curdir = currentDirections[i];
             Vector3 nextdir = currentDirections[i + 1];
-            if(Vector3.Dot(curdir,nextdir) > 0.5)
+            if (Vector3.Dot(curdir, nextdir) > 0.5)
             {
                 yAxis = curdir;
                 xAxis = Quaternion.AngleAxis(angle, rAxis) * yAxis;
-                origin = -0.5f * yAxis - 0.5f * snakeWidth * xAxis + currentPositions[i-1];            
+                origin = -0.5f * yAxis - 0.5f * snakeWidth * xAxis + currentPositions[i];
                 shape.Add(0);
             }
             else
             {
                 xAxis = -curdir;
                 yAxis = nextdir;
-                origin = -0.5f * yAxis - 0.5f * xAxis + currentPositions[i-1];
+                origin = -0.5f * yAxis - 0.5f * xAxis + currentPositions[i];
                 Vector3 axis = Vector3.Cross(yAxis, xAxis);
                 float dot = Vector3.Dot(axis, rAxis);
-                if(dot > 0)
+                if (dot > 0)
                 {
                     shape.Add(1);
                 }
@@ -272,134 +313,111 @@ public class SnakeRender : MonoBehaviour
                 {
                     shape.Add(2);
                 }
-                
+
             }
             coordinates.Add(origin);
             coordinates.Add(xAxis);
             coordinates.Add(yAxis);
         }
 
+        // placeHolder
+        coordinates.Add(Vector3.zero);
+        coordinates.Add(Vector3.zero);
+        coordinates.Add(Vector3.zero);
+        shape.Add(0);
 
-        for (int i = 0; i < shape.Count; i++)
+        for (int i = 1; i < shape.Count - 1; i++)
         {
             Mesh mesh = new Mesh { name = "SegmentMesh" };
-            List<Vector3> vertices = new List<Vector3>();
-            List<int> triangles = new List<int>();
-            List<Vector3> normals = new List<Vector3>();
+
             origin = coordinates[3 * i];
             xAxis = coordinates[3 * i + 1];
             yAxis = coordinates[3 * i + 2];
             if (shape[i] == 0)
             {
-             
-                GenerateRectangleMesh(vertices, triangles, normals, origin, xAxis, yAxis, numberOfHorizontalSlice);
+
+                GenerateRectangleMesh(verticesOfSegment[i], normalsOfSegment[i], origin, xAxis, yAxis);
             }
             else if (shape[i] == 1)
             {
-               
-                GenerateLeftBendMesh(vertices, triangles, normals, origin, xAxis, yAxis, 0,numberOfHorizontalSlice * bendSegments);
-            }else
+                GenerateLeftBendMesh(verticesOfSegment[i], normalsOfSegment[i], origin, xAxis, yAxis);
+
+            }
+            else
             {
-                GenerateRightBendMesh(vertices, triangles, normals, origin, xAxis, yAxis, 0, numberOfHorizontalSlice * bendSegments);
+                GenerateRightBendMesh(verticesOfSegment[i], normalsOfSegment[i], origin, xAxis, yAxis);
             }
 
-            mesh.SetVertices(vertices);
-            mesh.SetTriangles(triangles, 0);
-            mesh.SetNormals(normals);
+            AddTriangesOfSegment(trianglesOfSegment[i], numberOfVerticalSlice, numberOfHorizontalSlice);
+
+            mesh.SetVertices(verticesOfSegment[i]);
+            mesh.SetTriangles(trianglesOfSegment[i], 0);
+            mesh.SetNormals(normalsOfSegment[i]);
             MeshFilter mf = segments[i].GetComponent<MeshFilter>();
             MeshRenderer mr = segments[i].GetComponent<MeshRenderer>();
             mf.mesh = mesh;
             mr.material = material;
-
         }
 
-       
-
-        
-
-        /*        Mesh mesh = new Mesh { name = "SegmentMesh" };
-                List<Vector3> vertices = new List<Vector3>();
-                List<int> triangles = new List<int>();
-                List<Vector3> normals = new List<Vector3>();
-                //List<Vector2> uvs = new List<Vector2>();
-
-                Vector3 curdir = currentDirections[0];
-                Vector3 yAxis = curdir.normalized;
-                Vector3 axis = Vector3.forward;   
-                float angle = -90f;               
-                Vector3 xAxis = (Quaternion.AngleAxis(angle, axis) * yAxis).normalized;
-                Vector3 curpos = currentPositions[0];
-                Vector3 startpoint = curpos - 0.5f * snakeWidth * xAxis - 0.5f * yAxis;
-                GenerateRectangleMesh(vertices, triangles, normals, startpoint, xAxis, yAxis, 5);
-                mesh.SetVertices(vertices);
-                mesh.SetTriangles(triangles, 0);
-                mesh.SetNormals(normals);
-
-                GameObject head = segments[0];
-                MeshFilter mf = head.GetComponent<MeshFilter>();
-                MeshRenderer mr = head.GetComponent<MeshRenderer>();
-                mf.mesh = mesh;
-                mr.material = material;*/
-
+        RenderTail();
 
     }
 
-    private void CactulateCurrentDirections(LinkedList<Vector3> initialPos, LinkedList<Vector3> curtDir)
+    private void RenderHead()
     {
-        throw new NotImplementedException();
+        // render body of snake
+        float angle = 90;
+        Vector3 yAxis, xAxis, origin;
+        Vector3 rAxis = Vector3.back;
+        yAxis = currentDirections[0];
+        xAxis = Quaternion.AngleAxis(angle, rAxis) * yAxis;
+        origin = -0.5f * yAxis - 0.5f * snakeWidth * xAxis + currentPositions[0];
+  
+        Mesh mesh = new Mesh { name = "HeadMesh" };
+        GenerateRectangleMesh(verticesOfSegment[0], normalsOfSegment[0], origin, xAxis, yAxis);
+        AddTriangesOfSegment(trianglesOfSegment[0], numberOfVerticalSlice, numberOfHorizontalSlice);
+        mesh.SetVertices(verticesOfSegment[0]);
+        mesh.SetTriangles(trianglesOfSegment[0], 0);
+        mesh.SetNormals(normalsOfSegment[0]);
+        MeshFilter mf = segments[0].GetComponent<MeshFilter>();
+        MeshRenderer mr = segments[0].GetComponent<MeshRenderer>();
+        mf.mesh = mesh;
+        mr.material = material;
+
     }
 
-    private void AddVertexAndNormols(LinkedList<Vector3> bodypositions, List<Vector3> Vertexes)
+    private void RenderTail()
     {
-
+        // render body of snake
+        float angle = 90;
+        Vector3 yAxis, xAxis, origin;
+        Vector3 rAxis = Vector3.back;
+        yAxis = currentDirections[length-1];
+        xAxis = Quaternion.AngleAxis(angle, rAxis) * yAxis;
+        origin = -0.5f * yAxis - 0.5f * snakeWidth * xAxis + currentPositions[length-1];
+    
+        Mesh mesh = new Mesh { name = "HeadMesh" };
+        GenerateRectangleMesh(verticesOfSegment[length - 1], normalsOfSegment[length - 1], origin, xAxis, yAxis);
+        AddTriangesOfSegment(trianglesOfSegment[length - 1], numberOfVerticalSlice, numberOfHorizontalSlice);
+        mesh.SetVertices(verticesOfSegment[length - 1]);
+        mesh.SetTriangles(trianglesOfSegment[length - 1], 0);
+        mesh.SetNormals(normalsOfSegment[length - 1]);
+        MeshFilter mf = segments[length - 1].GetComponent<MeshFilter>();
+        MeshRenderer mr = segments[length - 1].GetComponent<MeshRenderer>();
+        mf.mesh = mesh;
+        mr.material = material;
     }
 
-    private Mesh GenerateSegmentMesh(Vector3 previous, Vector3 current, Vector3 next,int FrameCount)
+    private void GenerateRectangleMesh(List<Vector3> vertices, List<Vector3> normals, Vector3 origin, Vector3 xaxis, Vector3 yaxis)
     {
-        Mesh mesh = new Mesh { name = "SegmentMesh" };
-        List<Vector3> vertices = new List<Vector3>();
-        List<int> triangles = new List<int>();
-        List<Vector3> normals = new List<Vector3>();
-        List<Vector2> uvs = new List<Vector2>();
-
-      //  int numberOfMove = 5;
-        Vector3 origin, xAxis, yAxis;
-        origin = new Vector3(0, 0, 0);
-        xAxis = new Vector3(1, 0, 0);
-        yAxis = new Vector3(0, 1, 0);
-        Vector3 axis = Vector3.forward;
-        float angle = 45f;
-        xAxis = Quaternion.AngleAxis(angle, axis) * xAxis;
-        yAxis = Quaternion.AngleAxis(angle, axis) * yAxis;
-
-
-
-
-
-       // GenerateRectangleMesh(vertices, triangles, normals, origin, xAxis, yAxis, numberOfMove);
-
-      //  GenerateBendMesh(vertices, triangles, normals, origin, xAxis, yAxis, numberOfMove);
-
-        
-        mesh.SetVertices(vertices);
-        mesh.SetTriangles(triangles,0);
-        mesh.SetNormals(normals);
-        return mesh;
-       
-    }
-
-    private void GenerateRectangleMesh(List<Vector3> vertices, List<int> triangles, List<Vector3> normals,
-        Vector3 origin, Vector3 xaxis, Vector3 yaxis, int numberOfSegments)
-    {
-        // get the offset of vertices
-        int offset = vertices.Count;
+      
 
         //Width of the vertical split
         float widthOfVerticalSlice = snakeWidth / numberOfVerticalSlice;
         // the length of Segment is 1.0f
         float widthOfHorizontalSlice = 1.0f / numberOfHorizontalSlice;
-        float bendRadius = (1 - snakeWidth) / 2;
-        for (int i = 0; i <= numberOfSegments; i++)
+        
+        for (int i = 0; i <= numberOfHorizontalSlice; i++)
         {
             for (int j = 0; j <= numberOfVerticalSlice; j++)
             {
@@ -408,37 +426,17 @@ public class SnakeRender : MonoBehaviour
                 normals.Add(Vector3.forward);
             }
         }
-
- 
-        for (int i = 0; i < numberOfSegments; i++)
-        {
-            for (int j = 0; j < numberOfVerticalSlice; j++)
-            {
-                triangles.Add(offset + j + i * (numberOfVerticalSlice + 1));
-                triangles.Add(offset + j + (i + 1) * (numberOfVerticalSlice + 1));
-                triangles.Add(offset + j + i * (numberOfVerticalSlice + 1) + 1);
-
-                triangles.Add(offset + j + i * (numberOfVerticalSlice + 1) + 1);
-                triangles.Add(offset + j + (i + 1) * (numberOfVerticalSlice + 1));
-                triangles.Add(offset + j + (i + 1) * (numberOfVerticalSlice + 1) + 1);
-            }
-        }
-
-    
     }
 
 
-    private void GenerateRightBendMesh(List<Vector3> vertices, List<int> triangles, List<Vector3> normals,
-         Vector3 origin, Vector3 xaxis,Vector3 yaxis, int numberOfStart, int numberOfEnd)
-    {
-        
-        // get the offset of vertices
-        int offset = vertices.Count;
+    private void GenerateRightBendMesh(List<Vector3> vertices, List<Vector3> normals,
+         Vector3 origin, Vector3 xaxis,Vector3 yaxis)
+    {            
         float widthOfVerticalSlice = snakeWidth / numberOfVerticalSlice;
-        float angle = Mathf.PI / (2 * bendSegments * numberOfHorizontalSlice);
+        float angle = Mathf.PI / (2 * numberOfHorizontalSlice);
         float bendRadius =  snakeWidth / 2 + 0.5f;
         
-        for (int i = numberOfStart; i <= numberOfEnd; i++)
+        for (int i = 0; i <= numberOfHorizontalSlice; i++)
         {
             for (int j = 0; j <= numberOfVerticalSlice; j++)
             {
@@ -450,36 +448,21 @@ public class SnakeRender : MonoBehaviour
                 normals.Add(Vector3.forward);
             }
         }
-
-        float number = numberOfEnd - numberOfStart;
-        for (int i = 0; i < number; i++)
-        {
-            for (int j = 0; j < numberOfVerticalSlice; j++)
-            {
-                triangles.Add(offset + j + i * (numberOfVerticalSlice + 1));
-                triangles.Add(offset + j + (i + 1) * (numberOfVerticalSlice + 1));
-                triangles.Add(offset + j + i * (numberOfVerticalSlice + 1) + 1);
-
-                triangles.Add(offset + j + i * (numberOfVerticalSlice + 1) + 1);
-                triangles.Add(offset + j + (i + 1) * (numberOfVerticalSlice + 1));
-                triangles.Add(offset + j + (i + 1) * (numberOfVerticalSlice + 1) + 1);
-            }
-        }
+   
     }
 
-    private void GenerateLeftBendMesh(List<Vector3> vertices, List<int> triangles, List<Vector3> normals,
-     Vector3 origin, Vector3 xaxis, Vector3 yaxis, int numberOfStart, int numberOfEnd)
+    private void GenerateLeftBendMesh(List<Vector3> vertices, List<Vector3> normals,
+     Vector3 origin, Vector3 xaxis, Vector3 yaxis)
     {
 
-        // get the offset of vertices
-        int offset = vertices.Count;
+   
         float widthOfVerticalSlice = snakeWidth / numberOfVerticalSlice;
-        float angle = Mathf.PI / (2 * bendSegments * numberOfHorizontalSlice);
+        float angle = Mathf.PI / (2  * numberOfHorizontalSlice);
         float bendRadius = (1 - snakeWidth) / 2;
 
 
 
-        for (int i = numberOfStart; i <= numberOfEnd; i++)
+        for (int i = 0; i <= numberOfHorizontalSlice; i++)
         {
             for (int j = 0; j <= numberOfVerticalSlice; j++)
             {
@@ -491,23 +474,102 @@ public class SnakeRender : MonoBehaviour
                 normals.Add(Vector3.forward);
             }
         }
+    }
 
-        float number = numberOfEnd - numberOfStart;
-        for (int i = 0; i < number; i++)
+    private void AddTriangesOfSegment(List<int> triangles, int width , int length)
+    {
+        for (int i = 0; i < length; i++)
         {
-            for (int j = 0; j < numberOfVerticalSlice; j++)
+            for (int j = 0; j < width; j++)
             {
-                triangles.Add(offset + j + i * (numberOfVerticalSlice + 1));
-                triangles.Add(offset + j + (i + 1) * (numberOfVerticalSlice + 1));
-                triangles.Add(offset + j + i * (numberOfVerticalSlice + 1) + 1);
+                triangles.Add(j + i * (width + 1));
+                triangles.Add( j + (i + 1) * (width + 1));
+                triangles.Add(j + i * (width + 1) + 1);
 
-                triangles.Add(offset + j + i * (numberOfVerticalSlice + 1) + 1);
-                triangles.Add(offset + j + (i + 1) * (numberOfVerticalSlice + 1));
-                triangles.Add(offset + j + (i + 1) * (numberOfVerticalSlice + 1) + 1);
+                triangles.Add(j + i * (width + 1) + 1);
+                triangles.Add( j + (i + 1) * (width + 1));
+                triangles.Add( j + (i + 1) * (width + 1) + 1);
             }
         }
     }
 
+    private void SetVerticesOfLeftTurn(List<Vector3> vertices, Vector3 origin, Vector3 xaxis, Vector3 yaxis,int number)
+    {
+        float widthOfVerticalSlice = snakeWidth / numberOfVerticalSlice;
+        float angle = Mathf.PI / (2 * numberOfHorizontalSlice);
+        float bendRadius = (1 - snakeWidth) / 2;
+        
+            for (int j = 0; j <= numberOfVerticalSlice; j++)
+            {
+                Vector3 xcoor = (bendRadius + widthOfVerticalSlice * j) * xaxis * Mathf.Cos(number * angle);
+                Vector3 ycoor = (bendRadius + widthOfVerticalSlice * j) * yaxis * Mathf.Sin(number * angle);
+                Vector3 vertex = origin + xcoor + ycoor;
+                vertices[indexOfvertex + j] = vertex;           
+           }
+
+        updateIndexOfVertex();    
+    }
+
+    private void SetVerticesOfRightTurn(List<Vector3> vertices, Vector3 origin, Vector3 xaxis, Vector3 yaxis, int number)
+    {
+        float widthOfVerticalSlice = snakeWidth / numberOfVerticalSlice;
+        float angle = Mathf.PI / (2 * numberOfHorizontalSlice);
+        float bendRadius = (1 - snakeWidth) / 2 + 0.5f;
+
+        for (int j = 0; j <= numberOfVerticalSlice; j++)
+        {
+            Vector3 xcoor = (bendRadius - widthOfVerticalSlice * j) * xaxis * Mathf.Cos(number * angle);
+            Vector3 ycoor = (bendRadius - widthOfVerticalSlice * j) * yaxis * Mathf.Sin(number * angle);
+            Vector3 vertex = origin + xcoor + ycoor;
+            vertices[indexOfvertex + j] = vertex;
+        }
+
+        updateIndexOfVertex();
+    }
+
+    private void SetVerticesOfStraitWalk(List<Vector3> vertices, Vector3 origin, Vector3 xaxis, Vector3 yaxis, int number)
+    {
+
+
+        //Width of the vertical split
+        float widthOfVerticalSlice = snakeWidth / numberOfVerticalSlice;
+        // the length of Segment is 1.0f
+        float widthOfHorizontalSlice = 1.0f / numberOfHorizontalSlice;
+     
+            for (int j = 0; j <= numberOfVerticalSlice; j++)
+            {
+                Vector3 vertex = origin + number * widthOfHorizontalSlice * yaxis + widthOfVerticalSlice * j * xaxis;
+                vertices[indexOfvertex + j] = vertex;
+            }
+        updateIndexOfVertex();
+
+    }
+
+
+
+    private void updateIndexOfVertex()
+    {
+        indexOfvertex = indexOfvertex + numberOfVerticalSlice + 1;
+        indexOfvertex = indexOfvertex % ((numberOfHorizontalSlice + 1) * (numberOfVerticalSlice + 1));
+    }
+
+    private void SetTriangelOfLeftTurn(List<int> triangles, int width, int length)
+    {
+        int total = (width + 1) * (length + 1);
+        int cur = -1;
+        for (int i = 0; i < length; i++)
+        {
+            for (int j = 0; j < width; j++)
+            {
+                triangles[++cur] = (j + i * (width + 1) + indexOfvertex) % total;
+                triangles[++cur] = (j + (i + 1) * (width + 1) + indexOfvertex) % total;
+                triangles[++cur] = (j + i * (width + 1) + 1 + indexOfvertex) % total;
+                triangles[++cur] = (j + i * (width + 1) + 1 + indexOfvertex) % total;
+                triangles[++cur] = (j + (i + 1) * (width + 1) + indexOfvertex) % total;
+                triangles[++cur] = (j + (i + 1) * (width + 1) + 1 + indexOfvertex) % total;           
+            }
+        }
+    }
 
 
     private void TurnAround(Vector3 dir,int frmaeCount)
