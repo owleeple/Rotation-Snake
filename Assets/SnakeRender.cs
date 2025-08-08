@@ -193,7 +193,7 @@ public class SnakeRender : MonoBehaviour
                     {
                         shape[length - 1] = 2;
                     }
-                    origin = 0.5f * yAxis - 0.5f * predir + currentPositions[length-1];
+                    origin = 0.5f * curdir + 0.5f * predir + currentPositions[length-1];
 
                     coordinates[3 * (length - 1)] = origin;
 
@@ -330,16 +330,25 @@ public class SnakeRender : MonoBehaviour
                     }
 
                     //head
-                    /* segments[0].transform.position = currentPositions[0] + number * snakeDirection * 1f / numberOfHorizontalSlice;*/
+                     Mesh headmesh = meshes[0]; 
+                        Vector3[] headvertices = headmesh.vertices;
+                    for (int i = 0; i < headvertices.Length; i++)
+                    {
+                        headvertices[i] += snakeDirection / numberOfHorizontalSlice;
+                    }
+                    headmesh.vertices = headvertices;
+                    headmesh.RecalculateBounds();
+                    headmesh.RecalculateNormals();
 
-                    /*       //tail
-                           if (shape[length - 1] == 2)
-                           {
-                               float angle = number * 90 / numberOfHorizontalSlice;
-                               Vector3 point = coordinates[3 * (length - 1)];
-                               segments[length - 1].transform.RotateAround(point, Vector3.back, angle * number);
-                           }
-       */
+
+                    //tail
+                    if (shape[length - 1] == 2)
+                    {
+                        float angle = 90 / numberOfHorizontalSlice;
+                        Vector3 point = coordinates[3 * (length - 1)];
+                        segments[length - 1].transform.RotateAround(point, Vector3.back, angle);
+                    }
+
 
                 }
                 else
@@ -365,7 +374,7 @@ public class SnakeRender : MonoBehaviour
     private void InitialSnake()
     {
 
-      //  RenderHead();
+         RenderHead();
         coordinates.Add(Vector3.zero);
         coordinates.Add(Vector3.zero);
         coordinates.Add(Vector3.zero);
@@ -461,7 +470,7 @@ public class SnakeRender : MonoBehaviour
         xAxis = Quaternion.AngleAxis(angle, rAxis) * yAxis;
         origin = -0.5f * yAxis - 0.5f * snakeWidth * xAxis + currentPositions[0];
   
-        Mesh mesh = new Mesh { name = "HeadMesh" };
+        Mesh mesh = meshes[0];
         GenerateRectangleMesh(verticesOfSegment[0], normalsOfSegment[0], origin, xAxis, yAxis);
         AddTriangesOfSegment(trianglesOfSegment[0], numberOfVerticalSlice, numberOfHorizontalSlice);
         mesh.SetVertices(verticesOfSegment[0]);
