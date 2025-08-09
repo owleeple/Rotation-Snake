@@ -484,7 +484,7 @@ MonoBehaviour:
   numberOfVerticalSlice: 5
   numberOfHorizontalSlice: 5
   material: {fileID: 2100000, guid: 317d053b2aba9d84c90ce4887c179d41, type: 2}
-  speed: 4
+  speed: 5
   currentPositions:
   - {x: 2.5, y: 0.5, z: 0}
   - {x: 2.5, y: -0.5, z: 0}
