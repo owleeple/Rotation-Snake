@@ -100,7 +100,7 @@ public class SnakeRender : MonoBehaviour
     
     private bool canMove = true;
     private bool turnAround = false;
-    private bool recoverTurnAround = false;
+  //  private bool recoverTurnAround = false;
     private bool straitWalk = false;
     private int segmentsOfMove = 0;
 
@@ -638,7 +638,7 @@ public class SnakeRender : MonoBehaviour
   
         Mesh mesh = meshes[0];
         GenerateRectangleMesh(verticesOfSegment[0], normalsOfSegment[0], origin, xAxis, yAxis);
-        AddTriangesOfSegment(trianglesOfSegment[0], numberOfVerticalSlice, numberOfHorizontalSlice);
+        AddTriangesOfSegment(trianglesOfSegment[0], numberOfVerticalSlice, numberOfHorizontalSlice - 2);
         mesh.SetVertices(verticesOfSegment[0]);
         mesh.SetTriangles(trianglesOfSegment[0], 0);
         mesh.SetNormals(normalsOfSegment[0]);
