@@ -17,6 +17,7 @@ public class SnakeRender : MonoBehaviour
     // private float bendRadius = 0.5f;
    // private int bendSegments = 12;
     public int speed = 2;
+    public int count = 2;
     private int length;
     private int indexOfvertex = 0;
     // set up coordinates for vertice of right order
@@ -256,7 +257,7 @@ public class SnakeRender : MonoBehaviour
 
         if (recoverTurnAround)
         {
-            segmentsOfMove++;
+            segmentsOfMove += count;
             if (segmentsOfMove % speed == 0)
             {
                 if (segmentsOfMove / speed <= numberOfHorizontalSlice)
@@ -369,7 +370,7 @@ public class SnakeRender : MonoBehaviour
 
         if (turnAround)
         {
-            segmentsOfMove++;
+            segmentsOfMove+= count;
             if (segmentsOfMove % speed == 0)
             {
                 if (segmentsOfMove / speed <= numberOfHorizontalSlice)
@@ -482,7 +483,7 @@ public class SnakeRender : MonoBehaviour
 
         if (straitWalk)
         {
-            segmentsOfMove++;
+            segmentsOfMove += count;
             if (segmentsOfMove % speed == 0)
             {
                 if (segmentsOfMove / speed <= numberOfHorizontalSlice)
