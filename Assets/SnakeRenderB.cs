@@ -4,11 +4,10 @@ using System.Collections.Generic;
 using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.UIElements;
-using UnityEngine.WSA;
 using static UnityEditor.Searcher.SearcherWindow.Alignment;
 using static UnityEngine.UI.Image;
 
-public class SnakeRender : MonoBehaviour
+public class SnakeRenderB : MonoBehaviour
 {
     public float snakeWidth = 0.8f;
     // Vertical segmentation
@@ -16,7 +15,7 @@ public class SnakeRender : MonoBehaviour
     public int numberOfHorizontalSlice = 10;
     public Material material;
     // private float bendRadius = 0.5f;
-   // private int bendSegments = 12;
+    // private int bendSegments = 12;
     public int speed = 2;
     public int count = 2;
     private int length;
@@ -24,7 +23,7 @@ public class SnakeRender : MonoBehaviour
     // set up coordinates for vertice of right order
     private List<Vector3> coordinates = new List<Vector3>();
     private List<int> shape = new List<int>();
-   // private int turn = 0;
+    // private int turn = 0;
     // create list of vertices for new algorithm that only update head and tail in list
     private List<List<Vector3>> verticesOfSegment = new List<List<Vector3>>();
     private List<List<Vector2>> uvsOfSegment = new List<List<Vector2>>();
@@ -39,11 +38,11 @@ public class SnakeRender : MonoBehaviour
     private float turnAngle;
     private Vector3[] backupVerticesOfhead;
 
-    
 
-   
-    
-    
+
+
+
+
     // private LinkedList<Vector3> forwardDirections;
 
 
@@ -60,18 +59,18 @@ public class SnakeRender : MonoBehaviour
         }
 
         // initial targetposition and currentdirection
-         length = segments.Count;    
+        length = segments.Count;
         targetPositions = new List<Vector3>(length);
         for (int i = 0; i < length; i++)
         {
-            targetPositions.Add(Vector3.zero); 
+            targetPositions.Add(Vector3.zero);
         }
         currentDirections = new List<Vector3>(length);
-        Vector3 headdir = currentPositions[0]-currentPositions[1];
-        currentDirections.Add(headdir) ;
+        Vector3 headdir = currentPositions[0] - currentPositions[1];
+        currentDirections.Add(headdir);
         for (int i = 1; i < length; i++)
-        {    
-            currentDirections.Add(currentPositions[i - 1] - currentPositions[i]);         
+        {
+            currentDirections.Add(currentPositions[i - 1] - currentPositions[i]);
         }
 
         //initial meshes
@@ -84,7 +83,7 @@ public class SnakeRender : MonoBehaviour
         // initial elements of mesh
         for (int i = 0; i < length; i++)
         {
-           
+
             verticesOfSegment.Add(new List<Vector3>());
             trianglesOfSegment.Add(new List<int>());
             normalsOfSegment.Add(new List<Vector3>());
@@ -97,7 +96,7 @@ public class SnakeRender : MonoBehaviour
 
     private Vector3 inputDirection = Vector3.zero; // ????
     private Vector3 snakeDirection = Vector3.zero; // ????
-    
+
     private bool canMove = true;
     private bool turnAround = false;
     private bool recoverTurnAround = false;
@@ -137,21 +136,43 @@ public class SnakeRender : MonoBehaviour
             canMove = false;
             if (Vector3.Dot(snakeDirection, currentDirections[1]) < 0.5)
             {
+                if (Vector3.Dot(snakeDirection, currentDirections[2]) > 0.5)
+                {
+                    // recover strait
+                    recoverTurnAround = true;
+                    backupVerticesOfhead = meshes[0].vertices;
+                    Vector3 yAxis = snakeDirection;
+                    Vector3 xAxis = -currentDirections[1];
+                    Vector3 rAxis = Vector3.forward;
+                    Vector3 axis = Vector3.Cross(xAxis, yAxis);
+                    Vector3 origin = -0.5f * yAxis - 0.5f * xAxis + currentPositions[1];
+                    if (Vector3.Dot(axis, rAxis) > 0)
+                    {
+                        //recover left turn
+                        shape[1] = 1;
 
+                    }
+                    else
+                    {
+                        //recover right turn
+                        shape[1] = 2;
+                    }
+
+                    coordinates[3] = origin;
+                    coordinates[4] = xAxis;
+                    coordinates[5] = yAxis;
+                }
+                else if (Vector3.Dot(snakeDirection, currentDirections[2]) < 0.5 &&
+                    Vector3.Dot(snakeDirection, currentDirections[2]) > -0.5)
+                {
                     turnAround = true;
                     backupVerticesOfhead = meshes[0].vertices;
-                for (int i = 1; i < targetPositions.Count; i++)
-                {
-                    targetPositions[i] = currentPositions[i - 1];
 
-                }
-
-                targetPositions[0] = currentPositions[0] + snakeDirection;
-                Vector3 yAxis = currentDirections[1];
+                    Vector3 yAxis = currentDirections[1];
                     Vector3 xAxis = -snakeDirection;
                     Vector3 rAxis = Vector3.forward;
                     Vector3 axis = Vector3.Cross(xAxis, yAxis);
-                    Vector3 origin = -0.5f * yAxis - 0.5f * xAxis + currentPositions[0];
+                    Vector3 origin = -0.5f * yAxis - 0.5f * xAxis + currentPositions[1];
 
                     if (Vector3.Dot(axis, rAxis) > 0)
                     {
@@ -165,20 +186,54 @@ public class SnakeRender : MonoBehaviour
                         shape[1] = 2;
                     }
 
-
+                    //   indexOfvertex = indexOfvertex + numberOfVerticalSlice + 1;
                     coordinates[3] = origin;
                     coordinates[4] = xAxis;
                     coordinates[5] = yAxis;
+                }
+                else
+                {
+                    // it can not turn around because collider with itself
+                    snakeDirection = Vector3.zero;
+
+                    canMove = true;
+                }
 
 
-                // process tail
-                Vector3 curdir = currentDirections[length - 1];
+
+            }
+            else
+            {
+                // strait walk
+
+                straitWalk = true;
+                for (int i = 1; i < targetPositions.Count; i++)
+                {
+                    targetPositions[i] = currentPositions[i - 1];
+
+                }
+
+                targetPositions[0] = currentPositions[0] + snakeDirection;
+
+                float angle = 90;
+                Vector3 yAxis, xAxis, origin;
+                Vector3 rAxis = Vector3.back;
+
+                Vector3 curdir = currentDirections[1];
+                yAxis = curdir;
+                xAxis = Quaternion.AngleAxis(angle, rAxis) * yAxis;
+                origin = 0.5f * yAxis - 0.5f * snakeWidth * xAxis + currentPositions[1];
+                coordinates[3] = origin;
+                coordinates[4] = (xAxis);
+                coordinates[5] = (yAxis);
+
+                curdir = currentDirections[length - 1];
                 Vector3 predir = currentDirections[length - 2];
 
                 if (Vector3.Dot(curdir, predir) < 0.5)
                 {
                     rAxis = Vector3.forward;
-                    axis = Vector3.Cross(curdir, predir);
+                    Vector3 axis = Vector3.Cross(curdir, predir);
                     if (Vector3.Dot(axis, rAxis) > 0)
                     {
                         shape[length - 1] = 1;
@@ -197,74 +252,244 @@ public class SnakeRender : MonoBehaviour
                     shape[length - 1] = 0;
                 }
 
-
-
-            }
-            else
-            {
-                // strait walk
-
-                straitWalk = true;
-                for (int i = 1; i < targetPositions.Count; i++)
-                {
-                    targetPositions[i] = currentPositions[i-1] ;
-
-                }
-
-                targetPositions[0] = currentPositions[0] + snakeDirection;
-
-                float angle = 90;
-                Vector3 yAxis, xAxis, origin;
-                Vector3 rAxis = Vector3.back;
-             
-                Vector3 curdir = currentDirections[1];                          
-                yAxis = curdir;
-                xAxis = Quaternion.AngleAxis(angle, rAxis) * yAxis;
-                origin = 0.5f * yAxis - 0.5f * snakeWidth * xAxis + currentPositions[1];
-                coordinates[3] = origin;
-                coordinates[4] = (xAxis);
-                coordinates[5] = (yAxis);
-
-                curdir = currentDirections[length - 1];
-                Vector3 predir = currentDirections[length - 2];
-
-                if (Vector3.Dot(curdir, predir) < 0.5)
-                {                 
-                     rAxis = Vector3.forward;
-                    Vector3 axis = Vector3.Cross(curdir, predir);
-                    if(Vector3.Dot(axis, rAxis) > 0)
-                    {
-                        shape[length - 1] = 1;
-                    }
-                    else
-                    {
-                        shape[length - 1] = 2;
-                    }
-                    origin = 0.5f * curdir + 0.5f * predir + currentPositions[length-1];
-
-                    coordinates[3 * (length - 1)] = origin;
-
-                }
-                else
-                {
-                    shape[length - 1] = 0;
-                }
-                                                               
             }
         }
 
-
-
-        if (turnAround)
+        if (recoverTurnAround)
         {
-            segmentsOfMove+= count;
+            segmentsOfMove += count;
             if (segmentsOfMove % speed == 0)
             {
                 if (segmentsOfMove / speed <= numberOfHorizontalSlice)
                 {
                     int number = segmentsOfMove / speed;
-         
-                    // update body of others
+                    Mesh mesh = meshes[1];
+                    // Mesh headmesh = meshes[0];
+
+
+
+                    Vector3 origin = coordinates[3];
+                    Vector3 xAxis = coordinates[4];
+                    Vector3 yAxis = coordinates[5];
+
+
+                    indexOfvertex = indexOfvertex + numberOfVerticalSlice + 1;
+                    for (int i = 1; i <= numberOfHorizontalSlice - number; i++)
+                    {
+                        if (shape[1] == 1)
+                        {
+                            SetVerticesOfLeftTurn(verticesOfSegment[1], origin, xAxis, yAxis, i);
+                        }
+                        else
+                        {
+                            SetVerticesOfRightTurn(verticesOfSegment[1], origin, xAxis, yAxis, i);
+                        }
+
+                    }
+                    Vector3 startpoint = Vector3.zero;
+                    Vector3 newHeadPosition = Vector3.zero;
+                    Vector3 axis = Vector3.forward;
+                    float angle;
+                    if (shape[1] == 1)
+                    {
+                        angle = (numberOfHorizontalSlice - number) * 90 / numberOfHorizontalSlice;
+                    }
+                    else
+                    {
+                        angle = -(numberOfHorizontalSlice - number) * 90 / numberOfHorizontalSlice;
+                    }
+
+                    if (shape[1] == 1)
+                    {
+                        xAxis = Quaternion.AngleAxis(angle, axis) * xAxis;
+                        yAxis = Quaternion.AngleAxis(angle, axis) * yAxis;
+                        newHeadPosition = 0.5f * xAxis + origin + (0.5f + (float)number / numberOfHorizontalSlice) * yAxis;
+                        startpoint = xAxis * (1 - snakeWidth) / 2 + origin;
+                    }
+                    else
+                    {
+                        xAxis = Quaternion.AngleAxis(angle, axis) * xAxis;
+                        yAxis = Quaternion.AngleAxis(angle, axis) * yAxis;
+                        startpoint = xAxis * ((1 - snakeWidth) / 2 + 0.5f) + origin;
+                        newHeadPosition = 0.5f * xAxis + origin + (0.5f + (float)number / numberOfHorizontalSlice) * yAxis;
+                        xAxis = -xAxis;
+                    }
+
+                    for (int i = 1; i <= number; i++)
+                    {
+                        SetVerticesOfStraitWalk(verticesOfSegment[1], startpoint, xAxis, yAxis, i);
+                    }
+
+                    SetTriangels(trianglesOfSegment[1], numberOfVerticalSlice, numberOfHorizontalSlice);
+
+                    mesh.SetVertices(verticesOfSegment[1]);
+                    mesh.SetTriangles(trianglesOfSegment[1], 0);
+                    mesh.SetNormals(normalsOfSegment[1]);
+                    MeshFilter mf = segments[1].GetComponent<MeshFilter>();
+                    MeshRenderer mr = segments[1].GetComponent<MeshRenderer>();
+                    mf.mesh = mesh;
+                    mr.material = material;
+
+
+                    // render head
+                    // translate
+                    Vector3 translateVector = newHeadPosition - currentPositions[0];
+                    Matrix4x4 T = Matrix4x4.Translate(translateVector);
+                    Matrix4x4 Tneg = Matrix4x4.Translate(-newHeadPosition);
+                    Quaternion rotation = Quaternion.AngleAxis(angle - 90, axis);
+                    Matrix4x4 R = Matrix4x4.Rotate(rotation);
+                    Matrix4x4 Tpos = Matrix4x4.Translate(newHeadPosition);
+
+
+                    Matrix4x4 M = Tpos * R * Tneg * T;
+                    Mesh headmesh = meshes[0];
+                    Vector3[] headvertices = new Vector3[backupVerticesOfhead.Length];
+                    //List<Vector3> rotateVertices = new List<Vector3>();
+                    for (int i = 0; i < headvertices.Length; i++)
+                    {
+                        headvertices[i] = M.MultiplyPoint3x4(backupVerticesOfhead[i]);
+                    }
+                    headmesh.vertices = headvertices;
+                    headmesh.RecalculateBounds();
+                    headmesh.RecalculateNormals();
+
+                }
+                else
+                {
+                    recoverTurnAround = false;
+                    canMove = true;
+                    segmentsOfMove = 0;
+                    currentDirections[0] = snakeDirection;
+                    currentDirections[1] = snakeDirection;
+                    currentPositions[0] = currentPositions[1] + snakeDirection;
+                    snakeDirection = Vector3.zero;
+                }
+            }
+
+        }
+
+        if (turnAround)
+        {
+            segmentsOfMove += count;
+            if (segmentsOfMove % speed == 0)
+            {
+                if (segmentsOfMove / speed <= numberOfHorizontalSlice)
+                {
+                    int number = segmentsOfMove / speed;
+                    Mesh mesh = meshes[1];
+                    // Mesh headmesh = meshes[0];
+
+
+
+                    Vector3 origin = coordinates[3];
+                    Vector3 xAxis = coordinates[4];
+                    Vector3 yAxis = coordinates[5];
+
+
+                    indexOfvertex = indexOfvertex + numberOfVerticalSlice + 1;
+                    for (int i = 1; i <= number; i++)
+                    {
+                        if (shape[1] == 1)
+                        {
+                            SetVerticesOfLeftTurn(verticesOfSegment[1], origin, xAxis, yAxis, i);
+                        }
+                        else
+                        {
+                            SetVerticesOfRightTurn(verticesOfSegment[1], origin, xAxis, yAxis, i);
+                        }
+
+                    }
+                    Vector3 startpoint = Vector3.zero;
+                    Vector3 newHeadPosition = Vector3.zero;
+                    Vector3 axis = Vector3.forward;
+                    float angle;
+                    if (shape[1] == 1)
+                    {
+                        angle = number * 90 / numberOfHorizontalSlice;
+                    }
+                    else
+                    {
+                        angle = -number * 90 / numberOfHorizontalSlice;
+                    }
+
+                    if (shape[1] == 1)
+                    {
+                        xAxis = Quaternion.AngleAxis(angle, axis) * xAxis;
+                        yAxis = Quaternion.AngleAxis(angle, axis) * yAxis;
+                        newHeadPosition = 0.5f * xAxis + origin + (0.5f + (float)(numberOfHorizontalSlice - number) / numberOfHorizontalSlice) * yAxis;
+                        startpoint = xAxis * (1 - snakeWidth) / 2 + origin;
+                    }
+                    else
+                    {
+                        xAxis = Quaternion.AngleAxis(angle, axis) * xAxis;
+                        yAxis = Quaternion.AngleAxis(angle, axis) * yAxis;
+                        startpoint = xAxis * ((1 - snakeWidth) / 2 + 0.5f) + origin;
+                        newHeadPosition = 0.5f * xAxis + origin + (0.5f + (float)(numberOfHorizontalSlice - number) / numberOfHorizontalSlice) * yAxis;
+                        xAxis = -xAxis;
+                    }
+
+                    for (int i = 1; i <= numberOfHorizontalSlice - number; i++)
+                    {
+                        SetVerticesOfStraitWalk(verticesOfSegment[1], startpoint, xAxis, yAxis, i);
+                    }
+
+                    SetTriangels(trianglesOfSegment[1], numberOfVerticalSlice, numberOfHorizontalSlice);
+
+                    mesh.SetVertices(verticesOfSegment[1]);
+                    mesh.SetTriangles(trianglesOfSegment[1], 0);
+                    mesh.SetNormals(normalsOfSegment[1]);
+                    MeshFilter mf = segments[1].GetComponent<MeshFilter>();
+                    MeshRenderer mr = segments[1].GetComponent<MeshRenderer>();
+                    mf.mesh = mesh;
+                    mr.material = material;
+
+
+                    // render head
+                    // translate
+                    Vector3 translateVector = newHeadPosition - currentPositions[0];
+                    Matrix4x4 T = Matrix4x4.Translate(translateVector);
+                    Matrix4x4 Tneg = Matrix4x4.Translate(-newHeadPosition);
+                    Quaternion rotation = Quaternion.AngleAxis(angle, axis);
+                    Matrix4x4 R = Matrix4x4.Rotate(rotation);
+                    Matrix4x4 Tpos = Matrix4x4.Translate(newHeadPosition);
+
+
+                    Matrix4x4 M = Tpos * R * Tneg * T;
+                    Mesh headmesh = meshes[0];
+                    Vector3[] headvertices = new Vector3[backupVerticesOfhead.Length];
+                    //List<Vector3> rotateVertices = new List<Vector3>();
+                    for (int i = 0; i < headvertices.Length; i++)
+                    {
+                        headvertices[i] = M.MultiplyPoint3x4(backupVerticesOfhead[i]);
+                    }
+                    headmesh.vertices = headvertices;
+                    headmesh.RecalculateBounds();
+                    headmesh.RecalculateNormals();
+
+                }
+                else
+                {
+                    turnAround = false;
+                    canMove = true;
+                    segmentsOfMove = 0;
+                    currentDirections[0] = snakeDirection;
+                    currentDirections[1] = snakeDirection;
+                    currentPositions[0] = currentPositions[1] + snakeDirection;
+                    snakeDirection = Vector3.zero;
+                }
+            }
+
+        }
+
+
+        if (straitWalk)
+        {
+            segmentsOfMove += count;
+            if (segmentsOfMove % speed == 0)
+            {
+                if (segmentsOfMove / speed <= numberOfHorizontalSlice)
+                {
+
                     for (int i = length - 2; i >= 2; i--)
                     {
                         for (int j = 0; j <= numberOfVerticalSlice; j++)
@@ -273,50 +498,17 @@ public class SnakeRender : MonoBehaviour
                             verticesOfSegment[i][indexOfvertex + j] = verticesOfSegment[i - 1][(indexOfvertex + j + numberOfVerticalSlice + 1) % ((numberOfHorizontalSlice + 1) * (numberOfVerticalSlice + 1))];
                         }
 
+
+
                     }
 
-
-
+                    int number = segmentsOfMove / speed;
                     Vector3 origin = coordinates[3];
                     Vector3 xAxis = coordinates[4];
                     Vector3 yAxis = coordinates[5];
-                    
-                    
 
-                    if (shape[1] == 1)
-                    {
-                        SetVerticesOfLeftTurn(verticesOfSegment[1], origin, xAxis, yAxis, number);
-                    }
-                    else
-                    {
-                        SetVerticesOfRightTurn(verticesOfSegment[1], origin, xAxis, yAxis, number);
-                    }
-                           
-                      
-                    Vector3 startpoint = Vector3.zero;
-                    Vector3 newHeadPosition = Vector3.zero;
-                    Vector3 axis = Vector3.forward;
-                    float angle;
-                    if (shape[1] ==1)
-                    {
-                        angle = number * 90 / numberOfHorizontalSlice;
-                    }
-                    else
-                    {
-                         angle =-number * 90 / numberOfHorizontalSlice;
-                    }
-                        
-                    if (shape[1] == 1)
-                        {
-                            xAxis = Quaternion.AngleAxis(angle, axis) * xAxis;
-                            yAxis = Quaternion.AngleAxis(angle, axis) * yAxis;
-                            newHeadPosition = 0.5f * xAxis + origin + 0.5f * yAxis;                       
-                        }else
-                        {
-                              xAxis = Quaternion.AngleAxis(angle, axis) * xAxis;
-                              yAxis = Quaternion.AngleAxis(angle, axis) * yAxis;                             
-                              newHeadPosition = 0.5f * xAxis + origin + 0.5f  * yAxis ;                            
-                         }
+                    SetVerticesOfStraitWalk(verticesOfSegment[1], origin, xAxis, yAxis, number);
+
 
                     for (int i = 1; i < length - 1; i++)
                     {
@@ -331,23 +523,12 @@ public class SnakeRender : MonoBehaviour
                         mr.material = material;
                     }
 
-                    // render head
-                    // translate
-                       Vector3 translateVector = newHeadPosition - currentPositions[0];
-                     Matrix4x4 T = Matrix4x4.Translate(translateVector);
-                    Matrix4x4 Tneg = Matrix4x4.Translate(-newHeadPosition);
-                    Quaternion rotation = Quaternion.AngleAxis(angle, axis);
-                    Matrix4x4 R = Matrix4x4.Rotate(rotation);
-                    Matrix4x4 Tpos = Matrix4x4.Translate(newHeadPosition);
-                    
-                    
-                    Matrix4x4 M = Tpos * R * Tneg * T;
+                    //head
                     Mesh headmesh = meshes[0];
-                    Vector3[] headvertices = new Vector3[backupVerticesOfhead.Length];
-                    //List<Vector3> rotateVertices = new List<Vector3>();
+                    Vector3[] headvertices = headmesh.vertices;
                     for (int i = 0; i < headvertices.Length; i++)
                     {
-                       headvertices[i] = M.MultiplyPoint3x4(backupVerticesOfhead[i]) ;
+                        headvertices[i] += snakeDirection / numberOfHorizontalSlice;
                     }
                     headmesh.vertices = headvertices;
                     headmesh.RecalculateBounds();
@@ -391,11 +572,12 @@ public class SnakeRender : MonoBehaviour
                     tailmesh.RecalculateBounds();
                     tailmesh.RecalculateNormals();
 
+
                 }
                 else
                 {
-                    turnAround = false;
-                    canMove = true;                                                                            
+                    straitWalk = false;
+                    canMove = true;
                     snakeDirection = Vector3.zero;
                     segmentsOfMove = 0;
                     for (int i = 0; i < targetPositions.Count; i++)
@@ -411,127 +593,11 @@ public class SnakeRender : MonoBehaviour
                     }
 
                     currentDirections[0] = currentPositions[0] - currentPositions[1];
-                }
-            }
-
-        }
-
-
-        if (straitWalk)
-        {
-            segmentsOfMove += count;
-            if (segmentsOfMove % speed == 0)
-            {
-                if (segmentsOfMove / speed <= numberOfHorizontalSlice)
-                {
-
-                    for (int i = length - 2; i >= 2; i--)
-                    {
-                        for (int j = 0; j <= numberOfVerticalSlice; j++)
-                        {
-
-                            verticesOfSegment[i][indexOfvertex + j] = verticesOfSegment[i - 1][(indexOfvertex + j + numberOfVerticalSlice + 1)% ((numberOfHorizontalSlice + 1) * (numberOfVerticalSlice + 1))];
-                        }
-
-
-
-                    }
-
-                    int number = segmentsOfMove / speed;                 
-                    Vector3 origin = coordinates[3];
-                    Vector3 xAxis = coordinates[4];
-                    Vector3 yAxis = coordinates[5];
-
-                    SetVerticesOfStraitWalk(verticesOfSegment[1], origin, xAxis, yAxis, number);
-     
-
-                    for (int i = 1; i < length - 1; i++)
-                    {
-                        SetTriangels(trianglesOfSegment[i], numberOfVerticalSlice, numberOfHorizontalSlice);
-                        Mesh mesh = meshes[i];
-                        mesh.SetVertices(verticesOfSegment[i]);
-                        mesh.SetTriangles(trianglesOfSegment[i], 0);
-                        mesh.SetNormals(normalsOfSegment[i]);
-                        MeshFilter mf = segments[i].GetComponent<MeshFilter>();
-                        MeshRenderer mr = segments[i].GetComponent<MeshRenderer>();
-                        mf.mesh = mesh;
-                        mr.material = material;
-                    }
-
-                    //head
-                     Mesh headmesh = meshes[0]; 
-                        Vector3[] headvertices = headmesh.vertices;
-                    for (int i = 0; i < headvertices.Length; i++)
-                    {
-                        headvertices[i] += snakeDirection / numberOfHorizontalSlice;
-                    }
-                    headmesh.vertices = headvertices;
-                    headmesh.RecalculateBounds();
-                    headmesh.RecalculateNormals();
-
-
-                    //tail
-                    Mesh tailmesh = meshes[length-1];
-                    Vector3[] tailvertices = tailmesh.vertices;
-
-                    if (shape[length - 1] == 0)
-                    {
-                        for (int i = 0; i < tailvertices.Length; i++)
-                        {
-                            tailvertices[i] += currentDirections[length-1] / numberOfHorizontalSlice;
-                        }
-                    }
-                    else{
-
-                        Vector3 pivot = coordinates[3 * (length - 1)];
-
-                        for (int i = 0; i < tailvertices.Length; i++)
-                        {
-                            Vector3 relative = tailvertices[i] - pivot;
-                            if (shape[length - 1] == 1)
-                            {
-                                relative = Quaternion.AngleAxis(turnAngle, Vector3.forward) * relative;
-                            }
-                            else
-                            {
-                                relative = Quaternion.AngleAxis(turnAngle, Vector3.back) * relative;
-                            }
-                               
-                            tailvertices[i] = relative + pivot;
-                        }
-                      
-                    }
-
-                    tailmesh.vertices = tailvertices;
-                    tailmesh.RecalculateBounds();
-                    tailmesh.RecalculateNormals();
-
-
-                }
-                else
-                {
-                    straitWalk = false;
-                    canMove = true;
-                    snakeDirection = Vector3.zero;
-                    segmentsOfMove = 0;
-                    for (int i = 0; i < targetPositions.Count; i++)
-                    {
-                        currentPositions[i] =  targetPositions[i];
-
-                    }
-
-                    
-                    for (int i = 1; i < currentPositions.Count; i++)
-                    {
-                        currentDirections[i] = currentPositions[i - 1] - currentPositions[i];
-                    }
-
-                    currentDirections[0] = currentPositions[0] - currentPositions[1];
 
                 }
             }
 
-           
+
 
         }
     }
@@ -540,7 +606,7 @@ public class SnakeRender : MonoBehaviour
     private void InitialSnake()
     {
 
-         RenderHead();
+        RenderHead();
         coordinates.Add(Vector3.zero);
         coordinates.Add(Vector3.zero);
         coordinates.Add(Vector3.zero);
@@ -635,7 +701,7 @@ public class SnakeRender : MonoBehaviour
         yAxis = currentDirections[0];
         xAxis = Quaternion.AngleAxis(angle, rAxis) * yAxis;
         origin = -0.5f * yAxis - 0.5f * snakeWidth * xAxis + currentPositions[0];
-  
+
         Mesh mesh = meshes[0];
         GenerateRectangleMesh(verticesOfSegment[0], normalsOfSegment[0], origin, xAxis, yAxis);
         AddTriangesOfSegment(trianglesOfSegment[0], numberOfVerticalSlice, numberOfHorizontalSlice);
@@ -655,11 +721,11 @@ public class SnakeRender : MonoBehaviour
         float angle = 90;
         Vector3 yAxis, xAxis, origin;
         Vector3 rAxis = Vector3.back;
-        yAxis = currentDirections[length-1];
+        yAxis = currentDirections[length - 1];
         xAxis = Quaternion.AngleAxis(angle, rAxis) * yAxis;
-        origin = -0.5f * yAxis - 0.5f * snakeWidth * xAxis + currentPositions[length-1];
-    
-        Mesh mesh = meshes[length-1];
+        origin = -0.5f * yAxis - 0.5f * snakeWidth * xAxis + currentPositions[length - 1];
+
+        Mesh mesh = meshes[length - 1];
         GenerateRectangleMesh(verticesOfSegment[length - 1], normalsOfSegment[length - 1], origin, xAxis, yAxis);
         AddTriangesOfSegment(trianglesOfSegment[length - 1], numberOfVerticalSlice, numberOfHorizontalSlice);
         mesh.SetVertices(verticesOfSegment[length - 1]);
@@ -673,18 +739,18 @@ public class SnakeRender : MonoBehaviour
 
     private void GenerateRectangleMesh(List<Vector3> vertices, List<Vector3> normals, Vector3 origin, Vector3 xaxis, Vector3 yaxis)
     {
-      
+
 
         //Width of the vertical split
         float widthOfVerticalSlice = snakeWidth / numberOfVerticalSlice;
         // the length of Segment is 1.0f
         float widthOfHorizontalSlice = 1.0f / numberOfHorizontalSlice;
-        
+
         for (int i = 0; i <= numberOfHorizontalSlice; i++)
         {
             for (int j = 0; j <= numberOfVerticalSlice; j++)
             {
-                Vector3 vertex = origin + i * widthOfHorizontalSlice *yaxis + widthOfVerticalSlice * j * xaxis;
+                Vector3 vertex = origin + i * widthOfHorizontalSlice * yaxis + widthOfVerticalSlice * j * xaxis;
                 vertices.Add(vertex);
                 normals.Add(Vector3.forward);
             }
@@ -693,12 +759,12 @@ public class SnakeRender : MonoBehaviour
 
 
     private void GenerateRightBendMesh(List<Vector3> vertices, List<Vector3> normals,
-         Vector3 origin, Vector3 xaxis,Vector3 yaxis)
-    {            
+         Vector3 origin, Vector3 xaxis, Vector3 yaxis)
+    {
         float widthOfVerticalSlice = snakeWidth / numberOfVerticalSlice;
         float angle = Mathf.PI / (2 * numberOfHorizontalSlice);
-        float bendRadius =  snakeWidth / 2 + 0.5f;
-        
+        float bendRadius = snakeWidth / 2 + 0.5f;
+
         for (int i = 0; i <= numberOfHorizontalSlice; i++)
         {
             for (int j = 0; j <= numberOfVerticalSlice; j++)
@@ -711,16 +777,16 @@ public class SnakeRender : MonoBehaviour
                 normals.Add(Vector3.forward);
             }
         }
-   
+
     }
 
     private void GenerateLeftBendMesh(List<Vector3> vertices, List<Vector3> normals,
      Vector3 origin, Vector3 xaxis, Vector3 yaxis)
     {
 
-   
+
         float widthOfVerticalSlice = snakeWidth / numberOfVerticalSlice;
-        float angle = Mathf.PI / (2  * numberOfHorizontalSlice);
+        float angle = Mathf.PI / (2 * numberOfHorizontalSlice);
         float bendRadius = (1 - snakeWidth) / 2;
 
 
@@ -739,38 +805,38 @@ public class SnakeRender : MonoBehaviour
         }
     }
 
-    private void AddTriangesOfSegment(List<int> triangles, int width , int length)
+    private void AddTriangesOfSegment(List<int> triangles, int width, int length)
     {
         for (int i = 0; i < length; i++)
         {
             for (int j = 0; j < width; j++)
             {
                 triangles.Add(j + i * (width + 1));
-                triangles.Add( j + (i + 1) * (width + 1));
+                triangles.Add(j + (i + 1) * (width + 1));
                 triangles.Add(j + i * (width + 1) + 1);
 
                 triangles.Add(j + i * (width + 1) + 1);
-                triangles.Add( j + (i + 1) * (width + 1));
-                triangles.Add( j + (i + 1) * (width + 1) + 1);
+                triangles.Add(j + (i + 1) * (width + 1));
+                triangles.Add(j + (i + 1) * (width + 1) + 1);
             }
         }
     }
 
-    private void SetVerticesOfLeftTurn(List<Vector3> vertices, Vector3 origin, Vector3 xaxis, Vector3 yaxis,int number)
+    private void SetVerticesOfLeftTurn(List<Vector3> vertices, Vector3 origin, Vector3 xaxis, Vector3 yaxis, int number)
     {
         float widthOfVerticalSlice = snakeWidth / numberOfVerticalSlice;
         float angle = Mathf.PI / (2 * numberOfHorizontalSlice);
         float bendRadius = (1 - snakeWidth) / 2;
-        
-            for (int j = 0; j <= numberOfVerticalSlice; j++)
-            {
-                Vector3 xcoor = (bendRadius + widthOfVerticalSlice * j) * xaxis * Mathf.Cos(number * angle);
-                Vector3 ycoor = (bendRadius + widthOfVerticalSlice * j) * yaxis * Mathf.Sin(number * angle);
-                Vector3 vertex = origin + xcoor + ycoor;
-                vertices[(indexOfvertex + j) % ((numberOfHorizontalSlice + 1) * (numberOfVerticalSlice + 1))] = vertex;           
-           }
 
-        updateIndexOfVertex();    
+        for (int j = 0; j <= numberOfVerticalSlice; j++)
+        {
+            Vector3 xcoor = (bendRadius + widthOfVerticalSlice * j) * xaxis * Mathf.Cos(number * angle);
+            Vector3 ycoor = (bendRadius + widthOfVerticalSlice * j) * yaxis * Mathf.Sin(number * angle);
+            Vector3 vertex = origin + xcoor + ycoor;
+            vertices[(indexOfvertex + j) % ((numberOfHorizontalSlice + 1) * (numberOfVerticalSlice + 1))] = vertex;
+        }
+
+        updateIndexOfVertex();
     }
 
     private void SetVerticesOfRightTurn(List<Vector3> vertices, Vector3 origin, Vector3 xaxis, Vector3 yaxis, int number)
@@ -784,12 +850,12 @@ public class SnakeRender : MonoBehaviour
             Vector3 xcoor = (bendRadius - widthOfVerticalSlice * j) * xaxis * Mathf.Cos(number * angle);
             Vector3 ycoor = (bendRadius - widthOfVerticalSlice * j) * yaxis * Mathf.Sin(number * angle);
             Vector3 vertex = origin + xcoor + ycoor;
-            if(indexOfvertex + j > 35)
+            if (indexOfvertex + j > 35)
             {
                 Debug.Log(indexOfvertex);
                 Debug.Log(j);
             }
-            vertices[(indexOfvertex + j)%((numberOfHorizontalSlice + 1) * (numberOfVerticalSlice + 1))] = vertex;
+            vertices[(indexOfvertex + j) % ((numberOfHorizontalSlice + 1) * (numberOfVerticalSlice + 1))] = vertex;
         }
 
         updateIndexOfVertex();
@@ -803,12 +869,12 @@ public class SnakeRender : MonoBehaviour
         float widthOfVerticalSlice = snakeWidth / numberOfVerticalSlice;
         // the length of Segment is 1.0f
         float widthOfHorizontalSlice = 1.0f / numberOfHorizontalSlice;
-     
-            for (int j = 0; j <= numberOfVerticalSlice; j++)
-            {
-                Vector3 vertex = origin + number * widthOfHorizontalSlice * yaxis + widthOfVerticalSlice * j * xaxis;
-                vertices[(indexOfvertex + j) % ((numberOfHorizontalSlice + 1) * (numberOfVerticalSlice + 1))] = vertex;
-            }
+
+        for (int j = 0; j <= numberOfVerticalSlice; j++)
+        {
+            Vector3 vertex = origin + number * widthOfHorizontalSlice * yaxis + widthOfVerticalSlice * j * xaxis;
+            vertices[(indexOfvertex + j) % ((numberOfHorizontalSlice + 1) * (numberOfVerticalSlice + 1))] = vertex;
+        }
         updateIndexOfVertex();
 
     }
@@ -834,13 +900,13 @@ public class SnakeRender : MonoBehaviour
                 triangles[++cur] = (j + i * (width + 1) + 1 + indexOfvertex) % total;
                 triangles[++cur] = (j + i * (width + 1) + 1 + indexOfvertex) % total;
                 triangles[++cur] = (j + (i + 1) * (width + 1) + indexOfvertex) % total;
-                triangles[++cur] = (j + (i + 1) * (width + 1) + 1 + indexOfvertex) % total;           
+                triangles[++cur] = (j + (i + 1) * (width + 1) + 1 + indexOfvertex) % total;
             }
         }
     }
 
 
-    private void TurnAround(Vector3 dir,int frmaeCount)
+    private void TurnAround(Vector3 dir, int frmaeCount)
     {
 
     }

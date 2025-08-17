@@ -8,7 +8,7 @@ public class SwallowRendering : MonoBehaviour
     // Start is called before the first frame update
     public Vector3 position;
     private GameObject g;
-    private bool isActive = false;
+  // private bool isActive = false;
     public float snakeWidth = 0.8f;
     // Vertical segmentation
     public int numberOfVerticalSlice = 5;
@@ -79,7 +79,7 @@ public class SwallowRendering : MonoBehaviour
     {
         if (Input.GetKeyDown(KeyCode.J))
         {
-            isActive = true;
+          //  isActive = true;
         }
     }
 
