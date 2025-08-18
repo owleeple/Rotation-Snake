@@ -6,35 +6,41 @@ using UnityEngine;
 public class LevelManager : MonoBehaviour
 {
 
-
+    public SnakeRender snakeRender;
     private Vector3 inputDirection = Vector3.zero; // ????
-    private Vector3 snakeDirection = Vector3.zero;
+    //private Vector3 snakeDirection = Vector3.zero;
     private bool canMove = true;
+    private bool turnAround = false;
     private bool rotation = false;
     private int frameCount = 0;
 
-    public int numberOfVerticalSlice = 5;
-    public int numberOfHorizontalSlice = 10;
+    
+
+    private bool straitWalk = false;
+    private int segmentsOfMove = 0;
+
+   // public int numberOfVerticalSlice = 5;
+   // public int numberOfHorizontalSlice = 10;
     public Material material;
     // private float bendRadius = 0.5f;
     // private int bendSegments = 12;
     public int speed = 2;
-    public float angle;
+   // public float angle;
     private List<Vector3> rotateList;
 
     // Start is called before the first frame update
     void Start()
     {
-        angle = 180 / numberOfHorizontalSlice;
+      /*  angle = 180 / numberOfHorizontalSlice;
         rotateList = new List<Vector3>();
         rotateList.Add(Vector3.zero);
-        rotateList.Add(Vector3.zero);
+        rotateList.Add(Vector3.zero);*/
     }
 
     // Update is called once per frame
     void Update()
     {
-        if (snakeDirection != Vector3.zero) return;
+        if (snakeRender.snakeDirection != Vector3.zero) return;
         // ?????
         if (Input.GetKeyDown(KeyCode.W))
             inputDirection = Vector3.up;
@@ -58,7 +64,112 @@ public class LevelManager : MonoBehaviour
 
     private void FixedUpdate()
     {
+
+
         if (canMove && inputDirection != Vector3.zero)
+        {
+            snakeRender.snakeDirection = inputDirection;
+            inputDirection = Vector3.zero;
+            canMove = false;
+            if (Vector3.Dot(snakeRender.snakeDirection, snakeRender.currentDirections[1]) < 0.5)
+            {
+
+                turnAround = true;
+                snakeRender.backupVerticesOfhead = snakeRender.meshes[0].vertices;
+                snakeRender.UpdateTargetPosition();
+                // process second segment
+
+
+                snakeRender.SetDataOfSecondSegmentForTurnAround();
+
+                snakeRender.SetDataOfTail();
+
+
+
+
+
+            }
+            else
+            {
+                // strait walk
+
+                straitWalk = true;
+                snakeRender.UpdateTargetPosition();
+                snakeRender.SetDataOfSecondSegmentForStraitWalk();
+
+
+                // 2.process tail segment
+                snakeRender.SetDataOfTail();
+
+
+            }
+        }
+
+
+
+        if (turnAround)
+        {
+            segmentsOfMove += snakeRender.count;
+            if (segmentsOfMove % speed == 0)
+            {
+                if (segmentsOfMove / speed <= snakeRender.numberOfHorizontalSlice)
+                {
+                    int number = segmentsOfMove / speed;
+
+                    snakeRender.UpdateSegmentsInMiddleForTurnAround(number);
+                    snakeRender.UpdateHeadForTurnAround(number);
+
+                    snakeRender.UpdateTail();
+
+
+
+                }
+                else
+                {
+                    turnAround = false;
+                    canMove = true;
+                    snakeRender.snakeDirection = Vector3.zero;
+                    segmentsOfMove = 0;
+                    snakeRender.UpdateCurrentPositionAndCurrentDirection();
+                }
+            }
+
+        }
+
+
+        if (straitWalk)
+        {
+            segmentsOfMove += snakeRender.count;
+            if (segmentsOfMove % speed == 0)
+            {
+                if (segmentsOfMove / speed <= snakeRender.numberOfHorizontalSlice)
+                {
+                    int number = segmentsOfMove / speed;
+                    snakeRender.UpdateSegmentsInMiddleForStraitWalk(number);
+
+                    snakeRender.UpdateHeadForStraitWalk();
+
+                    snakeRender.UpdateTail();
+
+                }
+                else
+                {
+                    // 
+                    straitWalk = false;
+                    canMove = true;
+                    snakeRender.snakeDirection = Vector3.zero;
+                    segmentsOfMove = 0;
+                    snakeRender.UpdateCurrentPositionAndCurrentDirection();
+
+                }
+            }
+        }
+
+
+
+
+
+        /*if (canMove && inputDirection != Vector3.zero)
         {
             canMove = false;
             snakeDirection = inputDirection;
@@ -90,7 +201,7 @@ public class LevelManager : MonoBehaviour
                     frameCount = 0;
                 }
             }
-        }
+        }*/
 
 
     }

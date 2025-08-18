@@ -494,13 +494,14 @@ GameObject:
   - component: {fileID: 801396959}
   - component: {fileID: 801396958}
   - component: {fileID: 801396957}
+  - component: {fileID: 801396961}
   m_Layer: 0
   m_Name: Snake
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!23 &801396957
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -567,7 +568,7 @@ MonoBehaviour:
   numberOfVerticalSlice: 10
   numberOfHorizontalSlice: 5
   material: {fileID: 2100000, guid: 317d053b2aba9d84c90ce4887c179d41, type: 2}
-  speed: 1
+  speed: 2
   count: 1
   currentPositions:
   - {x: 2.5, y: 0.5, z: 0}
@@ -597,6 +598,25 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 1
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &801396961
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 801396956}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f2f4c6789511e2042998e8508ffee8e9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  snakeWidth: 0.8
+  numberOfVerticalSlice: 5
+  numberOfHorizontalSlice: 10
+  material: {fileID: 0}
+  speed: 2
+  count: 2
+  currentPositions: []
 --- !u!1 &999142112
 GameObject:
   m_ObjectHideFlags: 0
@@ -1129,13 +1149,14 @@ GameObject:
   m_Component:
   - component: {fileID: 1588791580}
   - component: {fileID: 1588791579}
+  - component: {fileID: 1588791581}
   m_Layer: 0
   m_Name: Manager
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!114 &1588791579
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1143,7 +1164,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1588791578}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 0cc3f3b7f6cf5e7429927008920f09cc, type: 3}
   m_Name: 
@@ -1171,6 +1192,23 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 5
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1588791581
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1588791578}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 044240e647541ac48882101422553a48, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  numberOfVerticalSlice: 5
+  numberOfHorizontalSlice: 10
+  material: {fileID: 0}
+  speed: 124
+  angle: 0
 --- !u!1 &1777290574
 GameObject:
   m_ObjectHideFlags: 0
@@ -1523,7 +1561,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 317d053b2aba9d84c90ce4887c179d41, type: 2}
+  - {fileID: 2100000, guid: cc5101e6a85ec554481aeba2c8a9d7e0, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -1570,7 +1608,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &2072748001
 Transform:
   m_ObjectHideFlags: 0
