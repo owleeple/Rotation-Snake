@@ -31,10 +31,19 @@ public class LevelManager : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-      /*  angle = 180 / numberOfHorizontalSlice;
-        rotateList = new List<Vector3>();
-        rotateList.Add(Vector3.zero);
-        rotateList.Add(Vector3.zero);*/
+        /*  angle = 180 / numberOfHorizontalSlice;
+          rotateList = new List<Vector3>();
+          rotateList.Add(Vector3.zero);
+          rotateList.Add(Vector3.zero);*/
+/*
+        // test GetHeight
+        GameObject gm = GameObject.Find("Snake");
+        Dictionary<GameObject, int> hmap = new Dictionary<GameObject, int>();
+        Vector2 dir = Vector2.down;
+        HashSet<GameObject> visited = new HashSet<GameObject>();
+        int height = GetHeight(gm, hmap, dir, visited);
+        Debug.Log("height is 4");
+        Debug.Log("REAL IS " + height);*/
     }
 
     // Update is called once per frame
@@ -237,7 +246,76 @@ public class LevelManager : MonoBehaviour
         
     }
 
+    // if gameobject can not hit anything, height will be 100
+    public int GetHeight(GameObject parent, Dictionary<GameObject, int> heightMap, Vector2 direction, HashSet<GameObject> visited)
+    {
+        if (heightMap.ContainsKey(parent))
+        {
+            return heightMap[parent];
+        }
+        
+        visited.Add(parent);
 
+        int minheight = int.MaxValue;
+        foreach (Transform child in parent.transform)
+        {
+            int childheight = int.MaxValue;
+            Vector2 startpos = child.gameObject.GetComponent<Collider2D>().bounds.center;
+            RaycastHit2D hit = Physics2D.Raycast(startpos + direction, direction);
+            if (hit.collider != null)
+            {
+                Vector2 hitpos = hit.collider.bounds.center;
+                int hitDistance = GetDistance(startpos, hitpos) - 1;
+                if (hit.collider.CompareTag("Ground"))
+                {
+
+                    childheight = hitDistance;
+
+                }
+                else
+                {
+                    Transform hitParent = hit.collider.transform.parent;
+                    if (hitParent != null && hitParent == parent.transform)
+                    {
+                        continue;
+                    }
+                    if (visited.Contains(hit.collider.gameObject)) continue;
+                    if (hit.collider.transform.parent == null)
+                    {
+                        Debug.Log("hit.collider do not have parent gameobject");
+                    }
+                    GameObject gm = hit.collider.transform.parent.gameObject;
+                    childheight = GetHeight(gm, heightMap, direction, visited) + hitDistance;
+                }
+
+                if (childheight < minheight) minheight = childheight;
+
+            }
+            else
+            {                             
+                if(minheight > 100) minheight = 100;            
+            }
+        }
+
+        if (minheight != int.MaxValue)
+        {
+            heightMap[parent] = minheight;
+        }
+        return minheight;
+    }
+
+
+    private int GetDistance(Vector2 startPoint, Vector2 endPoint)
+    {
+        // ???????????
+        Vector2 difference = endPoint - startPoint;
+
+        // ??????????????
+        float distance = Mathf.Sqrt(difference.x * difference.x + difference.y * difference.y);
+
+        // ??????????????????int?
+        return Mathf.RoundToInt(distance);
+    }
 
 
 

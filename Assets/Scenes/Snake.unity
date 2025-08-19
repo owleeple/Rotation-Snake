@@ -501,7 +501,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!23 &801396957
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -565,7 +565,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   snakeWidth: 0.5
-  numberOfVerticalSlice: 10
+  numberOfVerticalSlice: 20
   numberOfHorizontalSlice: 5
   material: {fileID: 2100000, guid: 317d053b2aba9d84c90ce4887c179d41, type: 2}
   speed: 2
@@ -577,6 +577,10 @@ MonoBehaviour:
   - {x: 3.5, y: -1.5, z: 0}
   - {x: 4.5, y: -1.5, z: 0}
   - {x: 4.5, y: -0.5, z: 0}
+  currentDirections: []
+  meshes: []
+  backupVerticesOfhead: []
+  snakeDirection: {x: 0, y: 0, z: 0}
 --- !u!4 &801396960
 Transform:
   m_ObjectHideFlags: 0
@@ -1204,11 +1208,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 044240e647541ac48882101422553a48, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  numberOfVerticalSlice: 5
-  numberOfHorizontalSlice: 10
+  snakeRender: {fileID: 801396959}
   material: {fileID: 0}
-  speed: 124
-  angle: 0
+  speed: 2
 --- !u!1 &1777290574
 GameObject:
   m_ObjectHideFlags: 0
@@ -1311,7 +1313,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 10306, guid: 0000000000000000f000000000000000, type: 0}
+  - {fileID: 2100000, guid: dc8e7d177b8931348a06a4010108cd83, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -1561,7 +1563,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: cc5101e6a85ec554481aeba2c8a9d7e0, type: 2}
+  - {fileID: 2100000, guid: dc8e7d177b8931348a06a4010108cd83, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0

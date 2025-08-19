@@ -50,6 +50,8 @@ public class SnakeRender : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        
+
         turnAngle = 90 / numberOfHorizontalSlice;
 
         segments = new List<GameObject>();
@@ -59,8 +61,12 @@ public class SnakeRender : MonoBehaviour
             segments.Add(child.gameObject);
         }
 
+    /*    Debug.Log("----------------collider's position -------------");
+        Collider2D col2D =segments[0].GetComponent<Collider2D>();
+        Vector2 center = col2D.bounds.center;
+        Debug.Log(center);*/
         // initial targetposition and currentdirection
-         length = segments.Count;    
+        length = segments.Count;    
         targetPositions = new List<Vector3>(length);
         for (int i = 0; i < length; i++)
         {
