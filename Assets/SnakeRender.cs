@@ -26,7 +26,7 @@ public class SnakeRender : MonoBehaviour
     private List<List<int>> trianglesOfSegment = new List<List<int>>();
     private List<List<Vector3>> normalsOfSegment = new List<List<Vector3>>();
 
-    private List<GameObject> segments;
+    public List<GameObject> segments;
     private List<Vector3> targetPositions;
     public List<Vector3> currentPositions;
     public List<Vector3> currentDirections;
@@ -85,7 +85,7 @@ public class SnakeRender : MonoBehaviour
         InitialSnake();
     }
 
-    private void SetPositionOfColliderOfSegments()
+    public void SetPositionOfColliderOfSegments()
     {
         for (int i = 0; i < segments.Count; i++)
         {
@@ -518,7 +518,7 @@ public class SnakeRender : MonoBehaviour
   
         Mesh mesh = meshes[0];
         GenerateRectangleMesh(verticesOfSegment[0], normalsOfSegment[0], origin, xAxis, yAxis);
-        AddTriangesOfSegment(trianglesOfSegment[0], numberOfVerticalSlice, numberOfHorizontalSlice - 2);
+        AddTriangesOfSegment(trianglesOfSegment[0], numberOfVerticalSlice, numberOfHorizontalSlice - 1);
         mesh.SetVertices(verticesOfSegment[0]);
         mesh.SetTriangles(trianglesOfSegment[0], 0);
         mesh.SetNormals(normalsOfSegment[0]);
