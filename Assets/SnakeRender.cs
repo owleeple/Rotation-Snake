@@ -1,12 +1,7 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using Unity.VisualScripting;
 using UnityEngine;
-using UnityEngine.UIElements;
-using UnityEngine.WSA;
-using static UnityEditor.Searcher.SearcherWindow.Alignment;
-using static UnityEngine.UI.Image;
+using static UnityEditor.PlayerSettings;
 
 public class SnakeRender : MonoBehaviour
 {
@@ -38,15 +33,7 @@ public class SnakeRender : MonoBehaviour
     public List<Mesh> meshes;
     private float turnAngle;
     public Vector3[] backupVerticesOfhead;
-
-    
-
-   
-    
-    
-    // private LinkedList<Vector3> forwardDirections;
-
-
+  
     // Start is called before the first frame update
     void Start()
     {
@@ -61,10 +48,6 @@ public class SnakeRender : MonoBehaviour
             segments.Add(child.gameObject);
         }
 
-    /*    Debug.Log("----------------collider's position -------------");
-        Collider2D col2D =segments[0].GetComponent<Collider2D>();
-        Vector2 center = col2D.bounds.center;
-        Debug.Log(center);*/
         // initial targetposition and currentdirection
         length = segments.Count;    
         targetPositions = new List<Vector3>(length);
@@ -79,6 +62,9 @@ public class SnakeRender : MonoBehaviour
         {    
             currentDirections.Add(currentPositions[i - 1] - currentPositions[i]);         
         }
+
+        SetPositionOfColliderOfSegments();
+
 
         //initial meshes
         meshes = new List<Mesh>();
@@ -99,142 +85,40 @@ public class SnakeRender : MonoBehaviour
         InitialSnake();
     }
 
-
+    private void SetPositionOfColliderOfSegments()
+    {
+        for (int i = 0; i < segments.Count; i++)
+        {
+            BoxCollider2D col2d = segments[i].GetComponent<BoxCollider2D>();
+            col2d.offset = currentPositions[i];
+        }
+    }
 
     private Vector3 inputDirection = Vector3.zero; // ????
     public Vector3 snakeDirection = Vector3.zero; // ????
     
-    private bool canMove = true;
-    private bool turnAround = false;
- 
-    private bool straitWalk = false;
-    private int segmentsOfMove = 0;
-
-/*    void Update()
+    public void MoveTheWholeSnake(Vector3 dir, float distance)
     {
-        if (snakeDirection != Vector3.zero) return;
-        // ?????
-        if (Input.GetKeyDown(KeyCode.W))
-            inputDirection = Vector3.up;
-        if (Input.GetKeyDown(KeyCode.S))
-            inputDirection = Vector3.down;
-        if (Input.GetKeyDown(KeyCode.A))
-            inputDirection = Vector3.left;
-        if (Input.GetKeyDown(KeyCode.D))
-            inputDirection = Vector3.right;
+        Vector3 translation = dir.normalized * distance;   
+        Matrix4x4 moveMatrix = Matrix4x4.Translate(translation);
+        for (int i = 0; i < meshes.Count; i++)
+        {
+            Mesh mesh = meshes[i];
+            Vector3[] vertices = mesh.vertices;
+            for (int j = 0; j < vertices.Length; j++)
+            {
+                Vector3 pos = vertices[j];
+                Vector3 newPos = moveMatrix.MultiplyPoint3x4(pos);
+                vertices[j] = newPos;
+                verticesOfSegment[i][j] = newPos;
+            }
 
-        // ?????
-        if (Input.GetKeyUp(KeyCode.W) && inputDirection == Vector3.up)
-            inputDirection = Vector3.zero;
-        if (Input.GetKeyUp(KeyCode.S) && inputDirection == Vector3.down)
-            inputDirection = Vector3.zero;
-        if (Input.GetKeyUp(KeyCode.A) && inputDirection == Vector3.left)
-            inputDirection = Vector3.zero;
-        if (Input.GetKeyUp(KeyCode.D) && inputDirection == Vector3.right)
-            inputDirection = Vector3.zero;
+            mesh.vertices = vertices;
+            mesh.RecalculateBounds();
+            mesh.RecalculateNormals();
+        }
     }
 
-    private void FixedUpdate()
-    {
-        if (canMove && inputDirection != Vector3.zero)
-        {
-            snakeDirection = inputDirection;
-            inputDirection = Vector3.zero;
-            canMove = false;
-            if (Vector3.Dot(snakeDirection, currentDirections[1]) < 0.5)
-            {
-
-                    turnAround = true;
-                    backupVerticesOfhead = meshes[0].vertices;
-                     UpdateTargetPosition();  
-                // process second segment
-          
-
-                SetDataOfSecondSegmentForTurnAround();
-
-                SetDataOfTail();
-
-   
-
-
-
-            }
-            else
-            {
-                // strait walk
-
-                straitWalk = true;
-                UpdateTargetPosition();
-                SetDataOfSecondSegmentForStraitWalk();
-          
-
-                // 2.process tail segment
-                SetDataOfTail();
-                
-                                                               
-            }
-        }
-
-
-
-        if (turnAround)
-        {
-            segmentsOfMove+= count;
-            if (segmentsOfMove % speed == 0)
-            {
-                if (segmentsOfMove / speed <= numberOfHorizontalSlice)
-                {
-                    int number = segmentsOfMove / speed;
-
-                    UpdateSegmentsInMiddleForTurnAround(number);
-                    UpdateHeadForTurnAround(number);
-
-                    UpdateTail();
-
-
-
-                }
-                else
-                {
-                    turnAround = false;
-                    canMove = true;                                                                            
-                    snakeDirection = Vector3.zero;
-                    segmentsOfMove = 0;
-                    UpdateCurrentPositionAndCurrentDirection();
-                }
-            }
-
-        }
-
-
-        if (straitWalk)
-        {
-            segmentsOfMove += count;
-            if (segmentsOfMove % speed == 0)
-            {
-                if (segmentsOfMove / speed <= numberOfHorizontalSlice)
-                {
-                    int number = segmentsOfMove / speed;
-                    UpdateSegmentsInMiddleForStraitWalk(number);
-
-                    UpdateHeadForStraitWalk();
-                 
-                    UpdateTail();
-
-                }
-                else
-                {
-                    // 
-                    straitWalk = false;
-                    canMove = true;
-                    snakeDirection = Vector3.zero;
-                    segmentsOfMove = 0;
-                    UpdateCurrentPositionAndCurrentDirection();
-
-                }
-            }
-        }
-    }*/
 
     public void UpdateCurrentPositionAndCurrentDirection()
     {
@@ -243,7 +127,6 @@ public class SnakeRender : MonoBehaviour
             currentPositions[i] = targetPositions[i];
 
         }
-
 
         for (int i = 1; i < currentPositions.Count; i++)
         {
@@ -524,6 +407,14 @@ public class SnakeRender : MonoBehaviour
         }
 
         targetPositions[0] = currentPositions[0] + snakeDirection;
+    }
+
+    public void UpdateTargetPositionWhenMoveWhole()
+    {
+        for (int i = 0; i < targetPositions.Count; i++)
+        {
+            targetPositions[i] = currentPositions[i] + snakeDirection;
+        }  
     }
 
     private void InitialSnake()
@@ -827,5 +718,7 @@ public class SnakeRender : MonoBehaviour
             }
         }
     }
+
+   
 
 }

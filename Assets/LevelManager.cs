@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using Unity.VisualScripting;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 public class LevelManager : MonoBehaviour
 {
@@ -17,6 +18,7 @@ public class LevelManager : MonoBehaviour
     
 
     private bool straitWalk = false;
+    private bool moveWhole = false;
     private int segmentsOfMove = 0;
 
    // public int numberOfVerticalSlice = 5;
@@ -25,25 +27,30 @@ public class LevelManager : MonoBehaviour
     // private float bendRadius = 0.5f;
     // private int bendSegments = 12;
     public int speed = 2;
-   // public float angle;
+    public float angle;
     private List<Vector3> rotateList;
 
     // Start is called before the first frame update
     void Start()
     {
-        /*  angle = 180 / numberOfHorizontalSlice;
-          rotateList = new List<Vector3>();
-          rotateList.Add(Vector3.zero);
-          rotateList.Add(Vector3.zero);*/
-/*
-        // test GetHeight
+        angle = 180 / snakeRender.numberOfHorizontalSlice;
+        rotateList = new List<Vector3>();
+        rotateList.Add(Vector3.zero);
+        rotateList.Add(Vector3.zero);
+        List<GameObject> frontobjects = new List<GameObject>();
         GameObject gm = GameObject.Find("Snake");
-        Dictionary<GameObject, int> hmap = new Dictionary<GameObject, int>();
-        Vector2 dir = Vector2.down;
-        HashSet<GameObject> visited = new HashSet<GameObject>();
-        int height = GetHeight(gm, hmap, dir, visited);
-        Debug.Log("height is 4");
-        Debug.Log("REAL IS " + height);*/
+        bool tag = CanMoveBackward(Vector2.down, gm, frontobjects);
+        if (tag)
+        {
+            for (int i = 0; i < frontobjects.Count; i++)
+            {
+                Debug.Log(frontobjects[i].name);
+            }
+        }
+        else
+        {
+            Debug.Log("front is wall");
+        }
     }
 
     // Update is called once per frame
@@ -80,37 +87,37 @@ public class LevelManager : MonoBehaviour
             snakeRender.snakeDirection = inputDirection;
             inputDirection = Vector3.zero;
             canMove = false;
-            if (Vector3.Dot(snakeRender.snakeDirection, snakeRender.currentDirections[1]) < 0.5)
+            if (Vector3.Dot(snakeRender.snakeDirection, snakeRender.currentDirections[1]) < -0.5)
             {
-
-                turnAround = true;
-                snakeRender.backupVerticesOfhead = snakeRender.meshes[0].vertices;
-                snakeRender.UpdateTargetPosition();
-                // process second segment
-
-
-                snakeRender.SetDataOfSecondSegmentForTurnAround();
-
-                snakeRender.SetDataOfTail();
-
-
-
-
+                moveWhole = true;
+                snakeRender.UpdateTargetPositionWhenMoveWhole();
 
             }
             else
             {
-                // strait walk
+                if (Vector3.Dot(snakeRender.snakeDirection, snakeRender.currentDirections[1]) < 0.5)
+                {
 
-                straitWalk = true;
-                snakeRender.UpdateTargetPosition();
-                snakeRender.SetDataOfSecondSegmentForStraitWalk();
+                    turnAround = true;
+                    snakeRender.backupVerticesOfhead = snakeRender.meshes[0].vertices;
+                    snakeRender.UpdateTargetPosition();
+                    // process second segment
+                    snakeRender.SetDataOfSecondSegmentForTurnAround();
+
+                    snakeRender.SetDataOfTail();
+                }
+                else
+                {
+                    // strait walk
+
+                    straitWalk = true;
+                    snakeRender.UpdateTargetPosition();
+                    snakeRender.SetDataOfSecondSegmentForStraitWalk();
 
 
-                // 2.process tail segment
-                snakeRender.SetDataOfTail();
-
-
+                    // 2.process tail segment
+                    snakeRender.SetDataOfTail();
+                }
             }
         }
 
@@ -175,42 +182,70 @@ public class LevelManager : MonoBehaviour
         }
 
 
+        if (moveWhole)
+        {
+            segmentsOfMove += snakeRender.count;
+            if (segmentsOfMove % speed == 0)
+            {
+                if (segmentsOfMove / speed <= snakeRender.numberOfHorizontalSlice)
+                {
+                   
+                    snakeRender.MoveTheWholeSnake(snakeRender.snakeDirection,1f / snakeRender.numberOfHorizontalSlice);
+
+  
+                }
+                else
+                {
+                    // 
+                    moveWhole = false;
+                    canMove = true;
+                    snakeRender.snakeDirection = Vector3.zero;
+                    segmentsOfMove = 0;
+                    snakeRender.UpdateCurrentPositionAndCurrentDirection();
+
+                }
+            }
+        }
 
 
 
-        /*if (canMove && inputDirection != Vector3.zero)
+
+
+        if (canMove && inputDirection != Vector3.zero)
         {
             canMove = false;
-            snakeDirection = inputDirection;
+            snakeRender.snakeDirection = inputDirection;
             inputDirection = Vector3.zero;
             rotation = true;
-            GameObject gm = GameObject.Find("GeometricObject");
-            CaculateRotatePivotAndAxis(snakeDirection, rotateList, gm);
+            GameObject gm = GameObject.Find("GeometricObjectB");
+            CaculateRotatePivotAndAxis(snakeRender.snakeDirection, rotateList, gm);
         }
 
         if (rotation)
         {
-            frameCount++; 
-            if(frameCount % speed == 0)
+            frameCount++;
+            if (frameCount % speed == 0)
             {
                 int numberOfSchedule = frameCount / speed;
-                if (numberOfSchedule <= numberOfHorizontalSlice)
+                if (numberOfSchedule <= snakeRender.numberOfHorizontalSlice)
                 {
-                   // float angles = angle * numberOfSchedule;
-                    GameObject gm = GameObject.Find("GeometricObject");
+                    // float angles = angle * numberOfSchedule;
+                    GameObject gma = GameObject.Find("GeometricObjectA");
+                    GameObject gmb = GameObject.Find("GeometricObjectB");
                     Vector3 pivot = rotateList[0];
                     Vector3 axis = rotateList[1];
-                    gm.transform.RotateAround(pivot, axis, angle);
+                    gma.transform.RotateAround(pivot, axis, angle);
+                    gmb.transform.RotateAround(pivot, axis, angle);
                 }
                 else
                 {
                     rotation = false;
                     canMove = true;
-                    snakeDirection = Vector3.zero;
+                    snakeRender.snakeDirection = Vector3.zero;
                     frameCount = 0;
                 }
             }
-        }*/
+        }
 
 
     }
@@ -245,6 +280,54 @@ public class LevelManager : MonoBehaviour
         
         
     }
+
+    // consider if it is movable according to frontobjects
+    public bool CanMoveBackward(Vector2 dir, GameObject detectobject, List<GameObject> frontobjects)
+    {
+
+        Queue<GameObject> checkObjects = new Queue<GameObject>();
+        checkObjects.Enqueue(detectobject);
+        do
+        {
+            GameObject checking = checkObjects.Dequeue();
+            if(checking.transform.childCount == 0)
+            {
+                Debug.Log("cheking do have child, this is a error--------------------------------");
+            }
+
+            foreach (Transform child in checking.transform)
+            {
+                Collider2D col = child.GetComponent<Collider2D>();
+                Vector2 pos = col.bounds.center;
+                Collider2D frontCollider = Physics2D.OverlapCircle(pos + dir, 0.3f);
+                if(frontCollider == null)
+                {
+                    continue;
+                }else if (frontCollider.CompareTag("Wall"))
+                {
+                    return false;
+                }
+                else if(frontCollider.transform.parent == col.transform.parent)
+                {
+                    continue;
+                }else if (frontobjects.Contains(frontCollider.transform.parent.gameObject))
+                {
+                    continue;
+                }else
+                {
+                    checkObjects.Enqueue(frontCollider.transform.parent.gameObject);
+                    frontobjects.Add(frontCollider.transform.parent.gameObject);
+                }
+
+            }
+
+        } while (checkObjects.Count != 0);
+        
+            return true;
+        
+    }
+
+
 
     // if gameobject can not hit anything, height will be 100
     public int GetHeight(GameObject parent, Dictionary<GameObject, int> heightMap, Vector2 direction, HashSet<GameObject> visited)
@@ -307,13 +390,9 @@ public class LevelManager : MonoBehaviour
 
     private int GetDistance(Vector2 startPoint, Vector2 endPoint)
     {
-        // ???????????
+       
         Vector2 difference = endPoint - startPoint;
-
-        // ??????????????
         float distance = Mathf.Sqrt(difference.x * difference.x + difference.y * difference.y);
-
-        // ??????????????????int?
         return Mathf.RoundToInt(distance);
     }
 
