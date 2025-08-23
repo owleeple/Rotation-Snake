@@ -417,6 +417,16 @@ public class SnakeRender : MonoBehaviour
         }  
     }
 
+    // update currentposition when portal
+    public void UpdateCurrentPositions(Vector3 offset)
+    {
+        for (int i = 0; i < targetPositions.Count; i++)
+        {
+            currentPositions[i] = currentPositions[i] + offset;
+        }
+    }
+
+
     private void InitialSnake()
     {
 
@@ -664,11 +674,11 @@ public class SnakeRender : MonoBehaviour
             Vector3 xcoor = (bendRadius - widthOfVerticalSlice * j) * xaxis * Mathf.Cos(number * angle);
             Vector3 ycoor = (bendRadius - widthOfVerticalSlice * j) * yaxis * Mathf.Sin(number * angle);
             Vector3 vertex = origin + xcoor + ycoor;
-            if(indexOfvertex + j > 35)
+         /*   if(indexOfvertex + j > 35)
             {
                 Debug.Log(indexOfvertex);
                 Debug.Log(j);
-            }
+            }*/
             vertices[(indexOfvertex + j)%((numberOfHorizontalSlice + 1) * (numberOfVerticalSlice + 1))] = vertex;
         }
 

@@ -4,6 +4,7 @@ using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.UIElements;
 using static UnityEditor.PlayerSettings;
+using static UnityEngine.Rendering.DebugUI;
 
 public class LevelManager : MonoBehaviour
 {
@@ -20,6 +21,7 @@ public class LevelManager : MonoBehaviour
 
     private bool straitWalk = false;
     private bool moveWhole = false;
+    private bool portalCheck = false;
     private int segmentsOfMove = 0;
 
    // public int numberOfVerticalSlice = 5;
@@ -32,6 +34,16 @@ public class LevelManager : MonoBehaviour
     private List<Vector3> rotateList;
     private GameObject rotateGameobject;
     private List<GameObject> frontobjects;
+    private List<GameObject> boxesColorChanged;
+    private LayerMask colorStripLayer;
+    private LayerMask portalColliderLayer;
+    private LayerMask colliderLayer;
+
+    // portal movement
+    public GameObject portalA;
+    public GameObject portalB;
+    private Dictionary<GameObject,GameObject> portal;
+    //private bool portalCheck = false;
 
     // Start is called before the first frame update
     void Start()
@@ -41,6 +53,14 @@ public class LevelManager : MonoBehaviour
         rotateList.Add(Vector3.zero);
         rotateList.Add(Vector3.zero);
          frontobjects = new List<GameObject>();
+        boxesColorChanged = new List<GameObject>();
+        colorStripLayer = LayerMask.GetMask("ColorStrip");
+        portalColliderLayer = LayerMask.GetMask("Box", "Player");
+        colliderLayer = LayerMask.GetMask("Box", "Player","Default");
+
+        portal = new Dictionary<GameObject, GameObject>();
+        portal.Add(portalA, portalB);
+        portal.Add(portalB, portalA);
  /*       GameObject gm = GameObject.Find("Snake");
         bool tag = CanMoveBackward(Vector2.down, gm, frontobjects);
         if (tag)
@@ -94,7 +114,28 @@ public class LevelManager : MonoBehaviour
             {
                 GameObject snake = snakeRender.gameObject;
                 frontobjects.Clear();
+                boxesColorChanged.Clear();
                 bool isMoved = CanMoveBackward(snakeRender.snakeDirection, snake, frontobjects);
+                if(frontobjects.Count != 0)
+                {
+                    for (int i = 0; i < frontobjects.Count; i++)
+                    {
+                        GameObject parent = frontobjects[i];
+                        foreach (Transform child in parent.transform)
+                        {
+
+                            Vector2 centerOfGridEdge = child.position + snakeRender.snakeDirection * 0.5f;
+                            Collider2D colorStrip = Physics2D.OverlapCircle(centerOfGridEdge, 0.3f, colorStripLayer);
+                            if (colorStrip != null && colorStrip.CompareTag("ColorVariation"))
+                            {
+                                boxesColorChanged.Add(child.gameObject);
+                                child.gameObject.GetComponent<BoxColorController>().SetDirection(snakeRender.snakeDirection);
+                            }
+                           
+                        }       
+                    }
+                }
+
                 if (isMoved)
                 {
                     moveWhole = true;
@@ -180,7 +221,8 @@ public class LevelManager : MonoBehaviour
                 {
                     turnAround = false;
                     canMove = true;
-                    snakeRender.snakeDirection = Vector3.zero;
+                    // snakeRender.snakeDirection = Vector3.zero;
+                    portalCheck = true;
                     segmentsOfMove = 0;
                     snakeRender.UpdateCurrentPositionAndCurrentDirection();
                     snakeRender.SetPositionOfColliderOfSegments();
@@ -210,7 +252,9 @@ public class LevelManager : MonoBehaviour
                     // 
                     straitWalk = false;
                     canMove = true;
-                    snakeRender.snakeDirection = Vector3.zero;
+                    //  snakeRender.snakeDirection = Vector3.zero;
+                    portalCheck = true;
+
                     segmentsOfMove = 0;
                     snakeRender.UpdateCurrentPositionAndCurrentDirection();
                     snakeRender.SetPositionOfColliderOfSegments();
@@ -224,7 +268,8 @@ public class LevelManager : MonoBehaviour
             segmentsOfMove += snakeRender.count;
             if (segmentsOfMove % speed == 0)
             {
-                if (segmentsOfMove / speed <= snakeRender.numberOfHorizontalSlice)
+                int number = segmentsOfMove / speed;
+                if (number <= snakeRender.numberOfHorizontalSlice)
                 {
                    
                     snakeRender.MoveTheWholeSnake(snakeRender.snakeDirection,1f / snakeRender.numberOfHorizontalSlice);
@@ -235,15 +280,31 @@ public class LevelManager : MonoBehaviour
                             BoxesController bp = boxparent.GetComponent<BoxesController>();
                             bp.Move(snakeRender.snakeDirection, 1f / snakeRender.numberOfHorizontalSlice);
                         }
+                        
+              
                     }
-  
+
+                    if(boxesColorChanged.Count != 0)
+                    {
+                        float ratio = 1 - number * 1f / snakeRender.numberOfHorizontalSlice;
+                        foreach (var box in boxesColorChanged)
+                        {
+                            box.GetComponent<BoxColorController>().SetRatio(ratio);
+                        }
+                    }
+                    
+                   
+                
                 }
                 else
                 {
                     // 
                     moveWhole = false;
                     canMove = true;
-                    snakeRender.snakeDirection = Vector3.zero;
+                    // set portalCheck , not snakeRender.snakeDirection
+                    // snakeRender.snakeDirection = Vector3.zero;
+                    portalCheck = true;
+
                     segmentsOfMove = 0;
                     snakeRender.UpdateCurrentPositionAndCurrentDirection();
                     snakeRender.SetPositionOfColliderOfSegments();
@@ -251,6 +312,7 @@ public class LevelManager : MonoBehaviour
             }
         }
 
+        // if colliding with something after rotation,destroy it and it do not portalcheck.
         if (rotation)
         {
             frameCount++;
@@ -272,6 +334,37 @@ public class LevelManager : MonoBehaviour
                 }
             }
         }
+
+        if (portalCheck && !rotation)
+        {
+            //process portal. if gm is in position of portal do something.
+            // 1.process boxes and snake. update positions and directions.
+            foreach (var pair in portal)
+            {
+                GameObject key = pair.Key;
+                GameObject value = pair.Value;
+                Collider2D col = Physics2D.OverlapCircle(key.transform.position, 0.3f, portalColliderLayer);
+                Vector3 offset = value.transform.position - key.transform.position - snakeRender.snakeDirection;
+                Vector3 dir = offset.normalized;
+                float distance = offset.magnitude;
+                if (col != null && col.CompareTag("Box"))
+                {
+                    GameObject parent = col.transform.parent.gameObject;
+            
+                    parent.GetComponent<BoxesController>().Move(dir, distance);
+                }else if(col != null && col.CompareTag("Player"))
+                {                
+                    snakeRender.MoveTheWholeSnake(dir, distance);
+                    snakeRender.UpdateCurrentPositions(offset);
+                    snakeRender.SetPositionOfColliderOfSegments();
+                }
+            }
+
+            //end ,set portalCheck and snakerender.snakeDirection
+            portalCheck = false;
+            snakeRender.snakeDirection = Vector3.zero;
+        }
+
 
 
     }
@@ -310,6 +403,12 @@ public class LevelManager : MonoBehaviour
     // consider if it is movable according to frontobjects
     public bool CanMoveBackward(Vector2 dir, GameObject detectobject, List<GameObject> frontobjects)
     {
+        // ??????? null ??
+        if (frontobjects == null)
+        {
+            Debug.LogWarning("frontobjects is null");
+            return false; // ?? true?????????
+        }
 
         Queue<GameObject> checkObjects = new Queue<GameObject>();
         checkObjects.Enqueue(detectobject);
@@ -326,13 +425,24 @@ public class LevelManager : MonoBehaviour
             {
                 Collider2D col = child.GetComponent<Collider2D>();
                 Vector2 pos = col.bounds.center;
-                Collider2D frontCollider = Physics2D.OverlapCircle(pos + dir, 0.3f);
+                Collider2D frontCollider = Physics2D.OverlapCircle(pos + dir, 0.3f, colliderLayer);
+                
                 if(frontCollider == null)
                 {
                     continue;
                 }else if (frontCollider.CompareTag("Wall"))
                 {
                     return false;
+                }else if (frontCollider.CompareTag("Portal"))
+                {
+                    if (IsFirstOrLastChild(child))
+                    {
+                        continue;
+                    }
+                    else
+                    {
+                        return false;
+                    }
                 }
                 else if(frontCollider.transform.parent == col.transform.parent)
                 {
@@ -354,7 +464,40 @@ public class LevelManager : MonoBehaviour
         
     }
 
+    private bool IsFirstOrLastChild(Transform child)
+    {
+        // ?? child ??? null
+        if (child == null)
+        {
+            Debug.LogWarning("Child is null");
+            return false;
+        }
 
+        // ?? child ??????
+        if (child.parent == null)
+        {
+            Debug.LogWarning("Child has no parent");
+            return false;
+        }
+
+        Transform parent = child.parent;
+
+        // ???????????
+        if (parent.childCount == 0)
+        {
+            Debug.LogWarning("Parent has no children");
+            return false;
+        }
+
+        // ?????????????
+        int childIndex = child.GetSiblingIndex();
+
+        // ????????????????
+        bool isFirstChild = (childIndex == 0);
+        bool isLastChild = (childIndex == parent.childCount - 1);
+
+        return isFirstChild || isLastChild;
+    }
 
     // if gameobject can not hit anything, height will be 100
     public int GetHeight(GameObject parent, Dictionary<GameObject, int> heightMap, Vector2 direction, HashSet<GameObject> visited)
