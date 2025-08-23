@@ -433,18 +433,7 @@ public class LevelManager : MonoBehaviour
                 }else if (frontCollider.CompareTag("Wall"))
                 {
                     return false;
-                }else if (frontCollider.CompareTag("Portal"))
-                {
-                    if (IsFirstOrLastChild(child))
-                    {
-                        continue;
-                    }
-                    else
-                    {
-                        return false;
-                    }
-                }
-                else if(frontCollider.transform.parent == col.transform.parent)
+                }else if(frontCollider.transform.parent == col.transform.parent)
                 {
                     continue;
                 }else if (frontobjects.Contains(frontCollider.transform.parent.gameObject))
