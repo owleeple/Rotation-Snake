@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using Unity.VisualScripting;
@@ -38,11 +39,19 @@ public class LevelManager : MonoBehaviour
     private LayerMask colorStripLayer;
     private LayerMask portalColliderLayer;
     private LayerMask colliderLayer;
+    private LayerMask moveLayer;
+    private LayerMask BoxLayer;
+    private LayerMask PlayerLayer;
+    private LayerMask PipeLayer;
+    private LayerMask BoxPlayerLayer;
 
     // portal movement
     public GameObject portalA;
     public GameObject portalB;
     private Dictionary<GameObject,GameObject> portal;
+
+    private Dictionary<string, int> pipeMas;
+
     //private bool portalCheck = false;
 
     // Start is called before the first frame update
@@ -56,7 +65,12 @@ public class LevelManager : MonoBehaviour
         boxesColorChanged = new List<GameObject>();
         colorStripLayer = LayerMask.GetMask("ColorStrip");
         portalColliderLayer = LayerMask.GetMask("Box", "Player");
-        colliderLayer = LayerMask.GetMask("Box", "Player","Default");
+        colliderLayer = LayerMask.GetMask("Box","Player","Wall","Pipe");
+        moveLayer = LayerMask.GetMask("Box","Player","Wall","Movement");
+        BoxLayer = LayerMask.GetMask("Box");     
+        PlayerLayer = LayerMask.GetMask("Player");
+        PipeLayer = LayerMask.GetMask("Pipe");
+        BoxPlayerLayer = LayerMask.GetMask("Box","Player");
 
         portal = new Dictionary<GameObject, GameObject>();
         portal.Add(portalA, portalB);
@@ -152,8 +166,8 @@ public class LevelManager : MonoBehaviour
             else
             {
                 Collider2D col = snakeRender.segments[0].GetComponent<Collider2D>();
-                Vector2 dectectPos = col.bounds.center + snakeRender.snakeDirection;
-                Collider2D colrotate = Physics2D.OverlapCircle(dectectPos, 0.3f);
+                Vector2 dectectPos = col.bounds.center + snakeRender.snakeDirection * 0.5f;
+                Collider2D colrotate = Physics2D.OverlapCircle(dectectPos, 0.2f);
                 if (colrotate !=null && colrotate.gameObject.CompareTag("Wall"))
                 {
                     canMove = true;
@@ -161,12 +175,14 @@ public class LevelManager : MonoBehaviour
                 }
                 else
                 {
-                    if(colrotate != null && colrotate.gameObject.CompareTag("Box"))
+                    if(colrotate != null && (colrotate.gameObject.CompareTag("Box") || colrotate.gameObject.CompareTag("Pipe")))
                     {
                         rotateGameobject = colrotate.transform.parent.gameObject;
                         CaculateRotatePivotAndAxis(snakeRender.snakeDirection, rotateList, rotateGameobject);
                         rotation = true;
                     }
+
+
 
 
                     if (Vector3.Dot(snakeRender.snakeDirection, snakeRender.currentDirections[1]) < 0.5)
@@ -421,36 +437,225 @@ public class LevelManager : MonoBehaviour
                 Debug.Log(checking.name);
             }
 
-            foreach (Transform child in checking.transform)
+            if (checking.CompareTag("Pipe"))
             {
-                Collider2D col = child.GetComponent<Collider2D>();
-                Vector2 pos = col.bounds.center;
-                Collider2D frontCollider = Physics2D.OverlapCircle(pos + dir, 0.3f, colliderLayer);
-                
-                if(frontCollider == null)
+                BoxCollider2D[] pipeColliders = checking.GetComponents<BoxCollider2D>();
+                int borderIndex = checking.GetComponent<ColliderData>().borderIndex;
+                for (int i = 0; i < pipeColliders.Length-1; i++)
                 {
-                    continue;
-                }else if (frontCollider.CompareTag("Wall"))
-                {
-                    return false;
-                }else if(frontCollider.transform.parent == col.transform.parent)
-                {
-                    continue;
-                }else if (frontobjects.Contains(frontCollider.transform.parent.gameObject))
-                {
-                    continue;
-                }else
-                {
-                    checkObjects.Enqueue(frontCollider.transform.parent.gameObject);
-                    frontobjects.Add(frontCollider.transform.parent.gameObject);
+
+                    if (i == borderIndex) continue;
+                    Vector2 start = (Vector2)pipeColliders[i].bounds.center + dir * 0.5f;
+                    Vector2 end = (Vector2)pipeColliders[i+1].bounds.center + dir * 0.5f;
+                    Collider2D[] frontColliders = GetCollidersBetweenTwoPoint(start, end, moveLayer);
+                    foreach (Collider2D frontCollider in frontColliders)
+                    {
+                        if (frontCollider.CompareTag("Wall"))
+                        {
+                            return false;
+                        }
+                        else if (frontCollider.CompareTag("Box"))
+                        {                         
+                            if (frontobjects.Contains(frontCollider.transform.parent.gameObject))
+                            {
+                                continue;
+                            }
+                            else
+                            {
+                                checkObjects.Enqueue(frontCollider.transform.parent.gameObject);
+                                frontobjects.Add(frontCollider.transform.parent.gameObject);
+                            }
+                       
+                        }else if (frontCollider.gameObject == checking.gameObject)
+                        {
+                            continue;
+                        }
+                        else if (frontobjects.Contains(frontCollider.gameObject))
+                        {
+                            continue;
+                        }
+                        else
+                        {
+                            checkObjects.Enqueue(frontCollider.gameObject);
+                            frontobjects.Add(frontCollider.gameObject);
+                        }
+                    }
                 }
 
+                for (int i = 0; i < pipeColliders.Length; i++)
+                {
+                    Vector2 start = (Vector2)pipeColliders[i].bounds.center;
+                    Vector2 end = (Vector2)pipeColliders[i].bounds.center + dir;
+                    Collider2D[] frontColliders = GetCollidersBetweenTwoPoint(start, end, moveLayer);
+                    foreach (Collider2D frontCollider in frontColliders)
+                    {
+                        if (frontCollider.CompareTag("Wall"))
+                        {
+                            return false;
+                        }
+                        else if (frontCollider.CompareTag("Box"))
+                        {
+                            if (frontobjects.Contains(frontCollider.transform.parent.gameObject))
+                            {
+                                continue;
+                            }
+                            else
+                            {
+                                checkObjects.Enqueue(frontCollider.transform.parent.gameObject);
+                                frontobjects.Add(frontCollider.transform.parent.gameObject);
+                            }
+
+                        }
+                        else if (frontCollider.gameObject == checking.gameObject)
+                        {
+                            continue;
+                        }
+                        else if (frontobjects.Contains(frontCollider.gameObject))
+                        {
+                            continue;
+                        }
+                        else
+                        {
+                            checkObjects.Enqueue(frontCollider.gameObject);
+                            frontobjects.Add(frontCollider.gameObject);
+                        }
+                    }
+                }
+
+
             }
+            else
+            {
+                for (int i = 0; i < checking.transform.childCount - 1; i++)
+                {
+                    Transform child = checking.transform.GetChild(i);
+                    Transform childnext = checking.transform.GetChild(i + 1);
+                    Collider2D col = child.GetComponent<Collider2D>();
+                    Collider2D colnext = childnext.GetComponent<Collider2D>();         
+                    Vector2 start = (Vector2)col.bounds.center + dir;
+                    Vector2 end = (Vector2)colnext.bounds.center + dir;
+
+
+
+                    Collider2D[] frontColliders = GetCollidersBetweenTwoPoint(start, end, moveLayer);
+                    foreach (Collider2D frontCollider in frontColliders)
+                    {
+                        if (frontCollider.CompareTag("Wall"))
+                        {
+                            return false;
+                        }
+                        else if (frontCollider.CompareTag("Pipe"))
+                        {
+                            if (frontobjects.Contains(frontCollider.gameObject))
+                            {
+                                continue;
+                            }
+                            else
+                            {
+                                checkObjects.Enqueue(frontCollider.gameObject);
+                                frontobjects.Add(frontCollider.gameObject);
+                            }
+                         
+                        }
+                        else if (frontCollider.transform.parent == child.parent)
+                        {
+                            continue;
+                        }
+                        else if (frontobjects.Contains(frontCollider.transform.parent.gameObject))
+                        {
+                            continue;
+                        }
+                        else
+                        {
+                            checkObjects.Enqueue(frontCollider.transform.parent.gameObject);
+                            frontobjects.Add(frontCollider.transform.parent.gameObject);
+                        }
+                    }
+
+                }
+
+                // forward path dectect
+                foreach (Transform child in checking.transform)
+                {
+                    Collider2D col = child.GetComponent<Collider2D>();
+                    Vector2 pos = col.bounds.center;
+                    Vector2 posnext = pos + dir;
+                    Collider2D[] frontColliders = GetCollidersBetweenTwoPoint(pos, posnext, moveLayer);
+                    foreach (Collider2D frontCollider in frontColliders)
+                    {
+                        if (frontCollider.CompareTag("Wall"))
+                        {
+                            return false;
+                        }
+                        else if (frontCollider.CompareTag("Pipe"))
+                        {
+                            if (frontobjects.Contains(frontCollider.gameObject))
+                            {
+                                continue;
+                            }
+                            else
+                            {
+                                checkObjects.Enqueue(frontCollider.gameObject);
+                                frontobjects.Add(frontCollider.gameObject);
+                            }
+                        }
+                        else if (frontCollider.transform.parent == child.parent)
+                        {
+                            continue;
+                        }
+                        else if (frontobjects.Contains(frontCollider.transform.parent.gameObject))
+                        {
+                            continue;
+                        }
+                        else
+                        {
+                            checkObjects.Enqueue(frontCollider.transform.parent.gameObject);
+                            frontobjects.Add(frontCollider.transform.parent.gameObject);
+                        }
+                    }
+                }
+            }
+
+
+
+
+
+
 
         } while (checkObjects.Count != 0);
         
             return true;
         
+    }
+
+    /*    private Vector3 GetDirectionOfFirstOrLast(Transform child)
+        {
+            int index = child.GetSiblingIndex();
+            if(index == 0)
+            {
+                return 
+            }
+        }*/
+
+    public static Collider2D[] GetCollidersBetweenTwoPoint(Vector2 start, Vector2 end, LayerMask layerMask = default)
+    {
+        Vector2 direction = end - start;
+        float distance = direction.magnitude;
+
+        if (distance < Mathf.Epsilon)
+            return new Collider2D[0];
+
+        // ??RaycastAll??????
+        RaycastHit2D[] hits = Physics2D.RaycastAll(start, direction.normalized, distance, layerMask);
+
+        // ?????
+        Collider2D [] colliders = new Collider2D[hits.Length];
+        for (int i = 0; i < hits.Length; i++)
+        {
+            colliders[i] = hits[i].collider;
+        }
+
+        return colliders;
     }
 
     private bool IsFirstOrLastChild(Transform child)
