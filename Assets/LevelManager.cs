@@ -33,17 +33,19 @@ public class LevelManager : MonoBehaviour
     public int speed = 2;
     public float angle;
     private List<Vector3> rotateList;
-    private GameObject rotateGameobject;
+    private List<GameObject> rotateGameobjectlist;
     private List<GameObject> frontobjects;
     private List<GameObject> boxesColorChanged;
     private LayerMask colorStripLayer;
     private LayerMask portalColliderLayer;
     private LayerMask colliderLayer;
-    private LayerMask moveLayer;
+    private LayerMask TranslateLayer;
     private LayerMask BoxLayer;
     private LayerMask PlayerLayer;
     private LayerMask PipeLayer;
     private LayerMask BoxPlayerLayer;
+    private LayerMask MovementLayer;
+
 
     // portal movement
     public GameObject portalA;
@@ -66,15 +68,18 @@ public class LevelManager : MonoBehaviour
         colorStripLayer = LayerMask.GetMask("ColorStrip");
         portalColliderLayer = LayerMask.GetMask("Box", "Player");
         colliderLayer = LayerMask.GetMask("Box","Player","Wall","Pipe");
-        moveLayer = LayerMask.GetMask("Box","Player","Wall","Movement");
+        TranslateLayer = LayerMask.GetMask("Box","Player","Wall","Movement");
         BoxLayer = LayerMask.GetMask("Box");     
         PlayerLayer = LayerMask.GetMask("Player");
         PipeLayer = LayerMask.GetMask("Pipe");
         BoxPlayerLayer = LayerMask.GetMask("Box","Player");
+        MovementLayer = LayerMask.GetMask("Movement");
 
         portal = new Dictionary<GameObject, GameObject>();
         portal.Add(portalA, portalB);
         portal.Add(portalB, portalA);
+
+        rotateGameobjectlist = new List<GameObject>();
  /*       GameObject gm = GameObject.Find("Snake");
         bool tag = CanMoveBackward(Vector2.down, gm, frontobjects);
         if (tag)
@@ -166,26 +171,59 @@ public class LevelManager : MonoBehaviour
             else
             {
                 Collider2D col = snakeRender.segments[0].GetComponent<Collider2D>();
-                Vector2 dectectPos = col.bounds.center + snakeRender.snakeDirection * 0.5f;
-                Collider2D colrotate = Physics2D.OverlapCircle(dectectPos, 0.2f);
-                if (colrotate !=null && colrotate.gameObject.CompareTag("Wall"))
+                Vector2 dectectPos = col.bounds.center + snakeRender.snakeDirection * 0.8f;
+                Collider2D colrotate = Physics2D.OverlapCircle(dectectPos, 0.25f,TranslateLayer);
+
+                if (colrotate == null)
+                {
+                    Vector2 pipepos = col.bounds.center + snakeRender.snakeDirection * 0.5f;
+                    Collider2D colpipe = Physics2D.OverlapCircle(pipepos, 0.3f,MovementLayer);
+                    if (colpipe != null)
+                    {
+                        canMove = true;
+                        snakeRender.snakeDirection = Vector3.zero;
+                        return;
+                    }
+                }
+                else if (colrotate.gameObject.CompareTag("Wall") || colrotate.gameObject.CompareTag("Player"))
                 {
                     canMove = true;
                     snakeRender.snakeDirection = Vector3.zero;
+                    return;
                 }
                 else
                 {
-                    if(colrotate != null && (colrotate.gameObject.CompareTag("Box") || colrotate.gameObject.CompareTag("Pipe")))
+                    rotateGameobjectlist.Clear();
+                    if (colrotate.CompareTag("Pipe"))
                     {
-                        rotateGameobject = colrotate.transform.parent.gameObject;
-                        CaculateRotatePivotAndAxis(snakeRender.snakeDirection, rotateList, rotateGameobject);
+                        GetAllRotateGameobjects(colrotate.gameObject, rotateGameobjectlist);
+                    }
+                    else
+                    {
+                        GetAllRotateGameobjects(colrotate.transform.parent.gameObject, rotateGameobjectlist);
+                    }
+                     
+                    if (rotateGameobjectlist.Count != 0)
+                    {
+                        CaculateRotatePivotAndAxis(snakeRender.snakeDirection, rotateList, rotateGameobjectlist);
                         rotation = true;
                     }
+                    else
+                    {
+                        canMove = true;
+                        snakeRender.snakeDirection = Vector3.zero;
+                        return;
+                    }
+                }
 
 
 
 
-                    if (Vector3.Dot(snakeRender.snakeDirection, snakeRender.currentDirections[1]) < 0.5)
+
+
+
+
+                if (Vector3.Dot(snakeRender.snakeDirection, snakeRender.currentDirections[1]) < 0.5)
                     {
 
                         turnAround = true;
@@ -207,7 +245,7 @@ public class LevelManager : MonoBehaviour
                         // 2.process tail segment
                         snakeRender.SetDataOfTail();
                     }
-                }
+                
 
 
          
@@ -338,9 +376,12 @@ public class LevelManager : MonoBehaviour
                 if (numberOfSchedule <= snakeRender.numberOfHorizontalSlice)
                 {
 
-                    Vector3 pivot = rotateList[0];
-                    Vector3 axis = rotateList[1];
-                    rotateGameobject.transform.RotateAround(pivot, axis, angle);
+                    for (int i = 0; i < rotateGameobjectlist.Count; i++)
+                    {
+                        Vector3 pivot = rotateList[0];
+                        Vector3 axis = rotateList[1];
+                        rotateGameobjectlist[i].transform.RotateAround(pivot, axis, angle);
+                    }
         
                 }
                 else
@@ -385,23 +426,75 @@ public class LevelManager : MonoBehaviour
 
     }
 
-    private void CaculateRotatePivotAndAxis(Vector3 dir, List<Vector3> list, GameObject gm)
+    private void GetAllRotateGameobjects(GameObject gm,List<GameObject> rotates)
     {
-        if (gm.transform.childCount == 0) return;
-
-        // 1. ??? dir ?????????
-        Transform targetChild = gm.transform.GetChild(0);
-        float bestDot = Vector3.Dot(targetChild.position, dir); // ??
-        foreach (Transform child in gm.transform)
+        
+        rotates.Add(gm);
+        Queue<GameObject> visited = new Queue<GameObject>();
+        visited.Enqueue(gm);
+        do
         {
-            float dot = Vector3.Dot(child.position, dir);
-            if (dot > bestDot) // ???Vector3.left ???????“?”
+            GameObject parent = visited.Dequeue();
+            if (parent.CompareTag("Box"))
             {
-                bestDot = dot;
-                targetChild = child;
+                foreach (Transform child in parent.transform)
+                {
+                    Vector2 pos = child.GetComponent<BoxCollider2D>().bounds.center;
+                    Collider2D col = Physics2D.OverlapCircle(pos, 0.2f, PipeLayer);
+                    if (col != null && !rotates.Contains(col.transform.parent.gameObject))
+                    {
+                        rotates.Add(col.transform.parent.gameObject);
+                        visited.Enqueue(col.transform.parent.gameObject);
+                    }
+                }
             }
-        }
+            else
+            {
+                // pipe object process
+                
+                    foreach (Transform child in parent.transform)
+                    {
+                        Vector2 pos = child.GetComponent<BoxCollider2D>().bounds.center;
+                        Collider2D col = Physics2D.OverlapCircle(pos, 0.2f, BoxPlayerLayer);
+                    if (col != null && col.CompareTag("Player"))
+                    {
+                        rotates.Clear();
+                        return ;
+                    }
 
+                    if (col != null && !rotates.Contains(col.transform.parent.gameObject))
+                        {
+                            rotates.Add(col.transform.parent.gameObject);
+                            visited.Enqueue(col.transform.parent.gameObject);
+                        }
+                    }
+                
+            }
+
+        } while (visited.Count!=0);          
+    }
+
+    private void CaculateRotatePivotAndAxis(Vector3 dir, List<Vector3> list, List<GameObject> rotates)
+    {
+        
+        Transform targetChild = rotates[0].transform;
+        float bestDot = float.MinValue; // ??
+        for (int i = 0; i < rotates.Count; i++)
+        {
+            // 1. ??? dir ?????????
+            GameObject gm = rotates[i];                 
+            foreach (Transform child in gm.transform)
+            {
+                float dot = Vector3.Dot(child.position, dir);
+                if (dot > bestDot) // ???Vector3.left ???????“?”
+                {
+                    bestDot = dot;
+                    targetChild = child;
+                }
+            }
+
+         
+        }
         // 2. ?????????????pivot ????
         Vector3 halfExtents = targetChild.localScale * 0.5f;
         Vector3 edgeOffset = Vector3.Scale(dir.normalized, halfExtents);
@@ -412,8 +505,7 @@ public class LevelManager : MonoBehaviour
         // ???? 2D ???? Z ??????? 3D???????
         Vector3 axis = Quaternion.AngleAxis(90f, Vector3.back) * dir;
         list[1] = axis;
-        
-        
+
     }
 
     // consider if it is movable according to frontobjects
@@ -447,7 +539,7 @@ public class LevelManager : MonoBehaviour
                     if (i == borderIndex) continue;
                     Vector2 start = (Vector2)pipeColliders[i].bounds.center + dir * 0.5f;
                     Vector2 end = (Vector2)pipeColliders[i+1].bounds.center + dir * 0.5f;
-                    Collider2D[] frontColliders = GetCollidersBetweenTwoPoint(start, end, moveLayer);
+                    Collider2D[] frontColliders = GetCollidersBetweenTwoPoint(start, end, TranslateLayer);
                     foreach (Collider2D frontCollider in frontColliders)
                     {
                         if (frontCollider.CompareTag("Wall"))
@@ -486,7 +578,7 @@ public class LevelManager : MonoBehaviour
                 {
                     Vector2 start = (Vector2)pipeColliders[i].bounds.center;
                     Vector2 end = (Vector2)pipeColliders[i].bounds.center + dir;
-                    Collider2D[] frontColliders = GetCollidersBetweenTwoPoint(start, end, moveLayer);
+                    Collider2D[] frontColliders = GetCollidersBetweenTwoPoint(start, end, TranslateLayer);
                     foreach (Collider2D frontCollider in frontColliders)
                     {
                         if (frontCollider.CompareTag("Wall"))
@@ -537,7 +629,7 @@ public class LevelManager : MonoBehaviour
 
 
 
-                    Collider2D[] frontColliders = GetCollidersBetweenTwoPoint(start, end, moveLayer);
+                    Collider2D[] frontColliders = GetCollidersBetweenTwoPoint(start, end, TranslateLayer);
                     foreach (Collider2D frontCollider in frontColliders)
                     {
                         if (frontCollider.CompareTag("Wall"))
@@ -580,7 +672,7 @@ public class LevelManager : MonoBehaviour
                     Collider2D col = child.GetComponent<Collider2D>();
                     Vector2 pos = col.bounds.center;
                     Vector2 posnext = pos + dir;
-                    Collider2D[] frontColliders = GetCollidersBetweenTwoPoint(pos, posnext, moveLayer);
+                    Collider2D[] frontColliders = GetCollidersBetweenTwoPoint(pos, posnext, TranslateLayer);
                     foreach (Collider2D frontCollider in frontColliders)
                     {
                         if (frontCollider.CompareTag("Wall"))
