@@ -1,4 +1,4 @@
-using System;
+Ôªøusing System;
 using System.Collections;
 using System.Collections.Generic;
 using Unity.VisualScripting;
@@ -52,7 +52,7 @@ public class LevelManager : MonoBehaviour
     public GameObject portalB;
     private Dictionary<GameObject,GameObject> portal;
 
-    private Dictionary<string, int> pipeMas;
+
 
     //private bool portalCheck = false;
 
@@ -486,7 +486,7 @@ public class LevelManager : MonoBehaviour
             foreach (Transform child in gm.transform)
             {
                 float dot = Vector3.Dot(child.position, dir);
-                if (dot > bestDot) // ???Vector3.left ???????ì?î
+                if (dot > bestDot) // ???Vector3.left ???????‚Äú?‚Äù
                 {
                     bestDot = dot;
                     targetChild = child;
@@ -545,6 +545,9 @@ public class LevelManager : MonoBehaviour
                         if (frontCollider.CompareTag("Wall"))
                         {
                             return false;
+                        }else if (frontCollider.CompareTag("Player"))
+                        {
+                            continue;
                         }
                         else if (frontCollider.CompareTag("Box"))
                         {                         
@@ -584,6 +587,10 @@ public class LevelManager : MonoBehaviour
                         if (frontCollider.CompareTag("Wall"))
                         {
                             return false;
+                        }
+                        else if (frontCollider.CompareTag("Player"))
+                        {
+                            continue;
                         }
                         else if (frontCollider.CompareTag("Box"))
                         {
@@ -636,6 +643,10 @@ public class LevelManager : MonoBehaviour
                         {
                             return false;
                         }
+                        else if (frontCollider.CompareTag("Player"))
+                        {
+                            continue;
+                        }
                         else if (frontCollider.CompareTag("Pipe"))
                         {
                             if (frontobjects.Contains(frontCollider.gameObject))
@@ -678,6 +689,10 @@ public class LevelManager : MonoBehaviour
                         if (frontCollider.CompareTag("Wall"))
                         {
                             return false;
+                        }
+                        else if (frontCollider.CompareTag("Player"))
+                        {
+                            continue;
                         }
                         else if (frontCollider.CompareTag("Pipe"))
                         {
