@@ -68,6 +68,8 @@ public class LevelManager : MonoBehaviour
         colorStripLayer = LayerMask.GetMask("ColorStrip");
         portalColliderLayer = LayerMask.GetMask("Box", "Player");
         colliderLayer = LayerMask.GetMask("Box","Player","Wall","Pipe");
+        // Movement is the layer of parent of segments of pipe that is different from segments of pipe.
+        // Movement layer is created for the process of rotating pipe.
         TranslateLayer = LayerMask.GetMask("Box","Player","Wall","Movement");
         BoxLayer = LayerMask.GetMask("Box");     
         PlayerLayer = LayerMask.GetMask("Player");
@@ -129,6 +131,7 @@ public class LevelManager : MonoBehaviour
             snakeRender.snakeDirection = inputDirection;
             inputDirection = Vector3.zero;
             canMove = false;
+            // direction is backward, snake will move the whole body backward.
             if (Vector3.Dot(snakeRender.snakeDirection, snakeRender.currentDirections[1]) < -0.5)
             {
                 GameObject snake = snakeRender.gameObject;
@@ -171,13 +174,17 @@ public class LevelManager : MonoBehaviour
             else
             {
                 Collider2D col = snakeRender.segments[0].GetComponent<Collider2D>();
+                // Detection of obstatcle in front
                 Vector2 dectectPos = col.bounds.center + snakeRender.snakeDirection * 0.8f;
+                // here do not detect layer of segments of pipe but parent of them.
                 Collider2D colrotate = Physics2D.OverlapCircle(dectectPos, 0.25f,TranslateLayer);
 
                 if (colrotate == null)
                 {
-                    Vector2 pipepos = col.bounds.center + snakeRender.snakeDirection * 0.5f;
-                    Collider2D colpipe = Physics2D.OverlapCircle(pipepos, 0.3f,MovementLayer);
+                    // Detection of pipe walls. pipepos is the positions of pipewall.
+                    Vector2 pipeWallPos = col.bounds.center + snakeRender.snakeDirection * 0.5f;
+                    
+                    Collider2D colpipe = Physics2D.OverlapCircle(pipeWallPos, 0.3f,MovementLayer);
                     if (colpipe != null)
                     {
                         canMove = true;
@@ -194,6 +201,7 @@ public class LevelManager : MonoBehaviour
                 else
                 {
                     rotateGameobjectlist.Clear();
+                    // Physics2D.OverlapCircle(dectectPos, 0.25f,TranslateLayer) has detected parent of segments of pipe
                     if (colrotate.CompareTag("Pipe"))
                     {
                         GetAllRotateGameobjects(colrotate.gameObject, rotateGameobjectlist);
@@ -380,6 +388,7 @@ public class LevelManager : MonoBehaviour
                     {
                         Vector3 pivot = rotateList[0];
                         Vector3 axis = rotateList[1];
+                        // -angle and angle have the same visual effects
                         rotateGameobjectlist[i].transform.RotateAround(pivot, axis, angle);
                     }
         
@@ -426,25 +435,32 @@ public class LevelManager : MonoBehaviour
 
     }
 
+    /// <summary>
+    /// gm is geometricObject , parent of segments of pipe or player. rotates save all objects that possible be pipe or
+    /// geometricObject for rotating later
+    /// </summary>
+    /// <param name="gm"></param>
+    /// <param name="rotates"></param>
     private void GetAllRotateGameobjects(GameObject gm,List<GameObject> rotates)
     {
         
         rotates.Add(gm);
-        Queue<GameObject> visited = new Queue<GameObject>();
-        visited.Enqueue(gm);
+        Queue<GameObject> visiting = new Queue<GameObject>();
+        visiting.Enqueue(gm);
         do
         {
-            GameObject parent = visited.Dequeue();
+            GameObject parent = visiting.Dequeue();
             if (parent.CompareTag("Box"))
             {
                 foreach (Transform child in parent.transform)
                 {
                     Vector2 pos = child.GetComponent<BoxCollider2D>().bounds.center;
+                    // only detecting the segments of pipe
                     Collider2D col = Physics2D.OverlapCircle(pos, 0.2f, PipeLayer);
                     if (col != null && !rotates.Contains(col.transform.parent.gameObject))
                     {
                         rotates.Add(col.transform.parent.gameObject);
-                        visited.Enqueue(col.transform.parent.gameObject);
+                        visiting.Enqueue(col.transform.parent.gameObject);
                     }
                 }
             }
@@ -455,23 +471,24 @@ public class LevelManager : MonoBehaviour
                     foreach (Transform child in parent.transform)
                     {
                         Vector2 pos = child.GetComponent<BoxCollider2D>().bounds.center;
+                        // do detect Layer of pipe itself
                         Collider2D col = Physics2D.OverlapCircle(pos, 0.2f, BoxPlayerLayer);
-                    if (col != null && col.CompareTag("Player"))
-                    {
-                        rotates.Clear();
-                        return ;
-                    }
-
-                    if (col != null && !rotates.Contains(col.transform.parent.gameObject))
+                        if (col != null && col.CompareTag("Player"))
                         {
-                            rotates.Add(col.transform.parent.gameObject);
-                            visited.Enqueue(col.transform.parent.gameObject);
+                            rotates.Clear();
+                            return ;
                         }
+
+                        if (col != null && !rotates.Contains(col.transform.parent.gameObject))
+                            {
+                                rotates.Add(col.transform.parent.gameObject);
+                                visiting.Enqueue(col.transform.parent.gameObject);
+                            }
                     }
                 
             }
 
-        } while (visited.Count!=0);          
+        } while (visiting.Count!=0);          
     }
 
     private void CaculateRotatePivotAndAxis(Vector3 dir, List<Vector3> list, List<GameObject> rotates)
@@ -495,14 +512,12 @@ public class LevelManager : MonoBehaviour
 
          
         }
-        // 2. ?????????????pivot ????
+        // targetChild.position is not the farthest point. it need add half length of itself.
         Vector3 halfExtents = targetChild.localScale * 0.5f;
         Vector3 edgeOffset = Vector3.Scale(dir.normalized, halfExtents);
         Vector3 pivot = targetChild.position + edgeOffset;
         list[0] = pivot;
 
-        // 3. ?????
-        // ???? 2D ???? Z ??????? 3D???????
         Vector3 axis = Quaternion.AngleAxis(90f, Vector3.back) * dir;
         list[1] = axis;
 
