@@ -237,17 +237,17 @@ public class LevelManagerV2 : MonoBehaviour
     }
 
     /// <summary>
-    /// gm is geometricObject , parent of segments of pipe or player. rotates save all objects that possible be pipe or
-    /// geometricObject for rotating later
+    /// gameobject is geometricObject , parent of segments of pipe or player. rotates save all objects that possible be pipe or
+    /// geometricObject for rotating later.   geometry--pipe--geometry--pipe...
     /// </summary>
     /// <param name="gm"></param>
     /// <param name="rotates"></param>
-    private void GetAllRotateGameobjects(GameObject gm, List<GameObject> rotates)
+    private void GetAllRotateGameobjects(GameObject gameobject, List<GameObject> rotatingGameobjects)
     {
 
-        rotates.Add(gm);
+        rotatingGameobjects.Add(gameobject);
         Queue<GameObject> visiting = new Queue<GameObject>();
-        visiting.Enqueue(gm);
+        visiting.Enqueue(gameobject);
         do
         {
             GameObject parent = visiting.Dequeue();
@@ -256,11 +256,11 @@ public class LevelManagerV2 : MonoBehaviour
                 foreach (Transform child in parent.transform)
                 {
                     Vector2 pos = child.GetComponent<BoxCollider2D>().bounds.center;
-                    // only detecting the segments of pipe
+                    // only detecting the segameobjectents of pipe
                     Collider2D col = Physics2D.OverlapCircle(pos, 0.2f, PipeLayer);
-                    if (col != null && !rotates.Contains(col.transform.parent.gameObject))
+                    if (col != null && !rotatingGameobjects.Contains(col.transform.parent.gameObject))
                     {
-                        rotates.Add(col.transform.parent.gameObject);
+                        rotatingGameobjects.Add(col.transform.parent.gameObject);
                         visiting.Enqueue(col.transform.parent.gameObject);
                     }
                 }
@@ -276,13 +276,13 @@ public class LevelManagerV2 : MonoBehaviour
                     Collider2D col = Physics2D.OverlapCircle(pos, 0.2f, BoxPlayerLayer);
                     if (col != null && col.CompareTag("Player"))
                     {
-                        rotates.Clear();
+                        rotatingGameobjects.Clear();
                         return;
                     }
 
-                    if (col != null && !rotates.Contains(col.transform.parent.gameObject))
+                    if (col != null && !rotatingGameobjects.Contains(col.transform.parent.gameObject))
                     {
-                        rotates.Add(col.transform.parent.gameObject);
+                        rotatingGameobjects.Add(col.transform.parent.gameObject);
                         visiting.Enqueue(col.transform.parent.gameObject);
                     }
                 }
