@@ -2889,6 +2889,7 @@ GameObject:
   - component: {fileID: 1588791580}
   - component: {fileID: 1588791579}
   - component: {fileID: 1588791581}
+  - component: {fileID: 1588791582}
   m_Layer: 0
   m_Name: Manager
   m_TagString: Untagged
@@ -2949,6 +2950,18 @@ MonoBehaviour:
   angle: 0
   portalA: {fileID: 704597402}
   portalB: {fileID: 1669315730}
+--- !u!114 &1588791582
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1588791578}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3906187431c52d74ca0063abe06bd066, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &1605441091
 GameObject:
   m_ObjectHideFlags: 0
@@ -3948,9 +3961,9 @@ GameObject:
   - component: {fileID: 2072748003}
   - component: {fileID: 2072748002}
   - component: {fileID: 2072748004}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: GeometricObjectA
-  m_TagString: Untagged
+  m_TagString: Box
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
