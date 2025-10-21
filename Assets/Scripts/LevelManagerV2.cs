@@ -1,11 +1,5 @@
-using System;
-using System.Collections;
 using System.Collections.Generic;
-using Unity.VisualScripting;
 using UnityEngine;
-using UnityEngine.UIElements;
-using static UnityEditor.PlayerSettings;
-using static UnityEngine.Rendering.DebugUI;
 
 public class LevelManagerV2 : MonoBehaviour
 {
@@ -13,7 +7,7 @@ public class LevelManagerV2 : MonoBehaviour
     public SnakeController snakeController;
     private Vector3 inputDirection = Vector3.zero; // ????
     //private Vector3 moveDirection = Vector3.zero;
-    private bool canMove = true;
+    private bool acceptInput = true;
     private bool turnAround = false;
     private bool rotation = false;
     private int frameCount = -2;
@@ -32,7 +26,7 @@ public class LevelManagerV2 : MonoBehaviour
     // private int bendSegments = 12;
     public int speed = 2;
     public float angle;
-    private List<Vector3> rotateList;
+    private List<(Vector3 pivot, Vector3 axis)> pivotAndAxis;
     private List<GameObject> rotateGameobjectlist;
     private List<GameObject> frontobjects;
     private List<GameObject> boxesColorChanged;
@@ -55,9 +49,7 @@ public class LevelManagerV2 : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        rotateList = new List<Vector3>();
-        rotateList.Add(Vector3.zero);
-        rotateList.Add(Vector3.zero);
+        pivotAndAxis = new List<(Vector3 pivot, Vector3 axis)>();
         frontobjects = new List<GameObject>();
         boxesColorChanged = new List<GameObject>();
         colorStripLayer = LayerMask.GetMask("ColorStrip");
@@ -109,11 +101,11 @@ public class LevelManagerV2 : MonoBehaviour
     {
 
 
-        if (canMove && inputDirection != Vector3.zero)
+        if (acceptInput && inputDirection != Vector3.zero)
         {
             snakeController.moveDirection = inputDirection;
             inputDirection = Vector3.zero;
-            canMove = false;
+            acceptInput = false;
             // direction is backward, snake will move the whole body backward.
             if (Vector3.Dot(snakeController.moveDirection, snakeController.currentDirections[1]) < -0.5)
             {
@@ -141,7 +133,7 @@ public class LevelManagerV2 : MonoBehaviour
                 }
                 else if (colrotate.gameObject.CompareTag("Wall") || colrotate.gameObject.CompareTag("Player"))
                 {
-                    canMove = true;
+                    acceptInput = true;
                     snakeController.moveDirection = Vector3.zero;
                     return;
                 }
@@ -160,12 +152,12 @@ public class LevelManagerV2 : MonoBehaviour
 
                     if (rotateGameobjectlist.Count != 0)
                     {
-                        CaculateRotatePivotAndAxis(snakeController.moveDirection, rotateList, rotateGameobjectlist);
+                        CaculateRotatePivotAndAxis(snakeController.moveDirection, pivotAndAxis, rotateGameobjectlist);
                         rotation = true;
                     }
                     else
                     {
-                        canMove = true;
+                        acceptInput = true;
                         snakeController.moveDirection = Vector3.zero;
                         return;
                     }
@@ -300,36 +292,31 @@ public class LevelManagerV2 : MonoBehaviour
         } while (visiting.Count != 0);
     }
 
-    private void CaculateRotatePivotAndAxis(Vector3 dir, List<Vector3> list, List<GameObject> rotates)
+    private void CaculateRotatePivotAndAxis(Vector3 dir, List<(Vector3 pivot,Vector3 axis)> pivotAndAxis, List<GameObject> rotatingGeometries)
     {
-
-        Transform targetChild = rotates[0].transform;
+        pivotAndAxis.Clear();
+        Transform targetChild = rotatingGeometries[0].transform;
         float bestDot = float.MinValue; // ??
-        for (int i = 0; i < rotates.Count; i++)
+        for (int i = 0; i < rotatingGeometries.Count; i++)
         {
-            // 1. ??? dir ?????????
-            GameObject gm = rotates[i];
-            foreach (Transform child in gm.transform)
+            GameObject geometry = rotatingGeometries[i];
+            foreach (Transform child in geometry.transform)
             {
                 float dot = Vector3.Dot(child.position, dir);
-                if (dot > bestDot) // ???Vector3.left ???????“?”
+                if (dot > bestDot)
                 {
                     bestDot = dot;
                     targetChild = child;
                 }
             }
 
-
+            // targetChild.position is not the farthest point. it need add half length of itself.
+            Vector3 halfLengthOfChild = targetChild.localScale * 0.5f;
+            Vector3 edgeOffset = Vector3.Scale(dir.normalized, halfLengthOfChild);
+            Vector3 pivot = targetChild.position + edgeOffset;
+            Vector3 axis = Quaternion.AngleAxis(90f, Vector3.back) * dir;
+            pivotAndAxis.Add((pivot,axis));
         }
-        // targetChild.position is not the farthest point. it need add half length of itself.
-        Vector3 halfExtents = targetChild.localScale * 0.5f;
-        Vector3 edgeOffset = Vector3.Scale(dir.normalized, halfExtents);
-        Vector3 pivot = targetChild.position + edgeOffset;
-        list[0] = pivot;
-
-        Vector3 axis = Quaternion.AngleAxis(90f, Vector3.back) * dir;
-        list[1] = axis;
-
     }
 
     // consider if it is movable according to frontobjects
