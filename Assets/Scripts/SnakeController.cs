@@ -2,8 +2,12 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class TestFunction : MonoBehaviour
+public class SnakeController : MonoBehaviour
 {
+    public Vector3 moveDirection = Vector3.zero;
+    public List<Vector3> currentDirections;
+    public List<GameObject> segments;
+
     // Start is called before the first frame update
     void Start()
     {
@@ -13,8 +17,6 @@ public class TestFunction : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        Vector3 axis = Quaternion.AngleAxis(90f, Vector3.back) * Vector3.right;
-        int a = 10;
-       // Vector3.left.RotateAround(Vector3.zero, axis, 90);
+        
     }
 }
