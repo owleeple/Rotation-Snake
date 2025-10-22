@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
+using static UnityEditor.PlayerSettings;
 
 public class LevelManagerV2 : MonoBehaviour
 {
@@ -11,19 +12,20 @@ public class LevelManagerV2 : MonoBehaviour
     private Vector3 inputDirection = Vector3.zero; // ????
     //private Vector3 moveDirection = Vector3.zero;
     private bool isRotating = false;
-
     private bool isMoving = false;
     private bool startMove = false;
   //  private bool portalCheck = false;
 
-
-
-   // public Material material;
+  // check objects that is push by snake.
+    private Queue<GameObject> visitingGameObjects;
+    private List<GameObject> translateGameobjectlist;
+    private List<GameObject> rotateGameobjectlist;
+    private List<(Vector3 pivot, Vector3 axis)> pivotAndAxis;
+    // public Material material;
 
     public int speed = 2;
     public float angle;
-    private List<(Vector3 pivot, Vector3 axis)> pivotAndAxis;
-    private List<GameObject> rotateGameobjectlist;
+
     private List<GameObject> frontobjects;
     private List<GameObject> boxesColorChanged;
     private LayerMask colorStripLayer;
@@ -65,7 +67,8 @@ public class LevelManagerV2 : MonoBehaviour
         portal.Add(portalB, portalA);*/
 
         rotateGameobjectlist = new List<GameObject>();
-
+        translateGameobjectlist = new List<GameObject>();
+        visitingGameObjects = new Queue<GameObject>();
     }
 
     // Update is called once per frame
@@ -97,6 +100,12 @@ public class LevelManagerV2 : MonoBehaviour
         //center process
         if (inputDirection != Vector3.zero && !isMoving && !isRotating)
         {
+            visitingGameObjects.Clear();
+            rotateGameobjectlist.Clear();
+            translateGameobjectlist.Clear();
+            GameObject snakeHead = snakeController.GetHead();
+            visitingGameObjects.Enqueue(snakeHead);
+            if (!CanMoveForward(inputDirection,visitingGameObjects,translateGameobjectlist,rotateGameobjectlist)) return;
             snakeController.moveDirection = inputDirection;
             inputDirection = Vector3.zero;
             isMoving = true;
@@ -118,6 +127,131 @@ public class LevelManagerV2 : MonoBehaviour
         }
 
 
+    }
+
+    private bool CanMoveForward(Vector3 inputDirection,Queue<GameObject> visiting_gameObjects, List<GameObject> translate_gameobject_list, List<GameObject> rotate_gameobject_list)
+    {
+        do
+        {
+            GameObject gameobject = visiting_gameObjects.Dequeue();
+            Collider2D frontObject = Physics2D.OverlapCircle(gameobject.transform.position + inputDirection, 0.3f, colliderLayer);
+            if (frontObject == null) continue;
+            if (frontObject.CompareTag("Wall")) { 
+                return false;
+            }
+            if (frontObject.CompareTag("Player")) {
+                return false; 
+            }
+            if (rotate_gameobject_list.Contains(frontObject.transform.parent.gameObject) ||
+                translate_gameobject_list.Contains(frontObject.transform.parent.gameObject)) continue;
+            if(frontObject.transform.parent == null)
+            {
+                throw new ArgumentNullException(nameof(frontObject.transform.parent.gameObject), "object can not be null");
+            }
+
+            float border = GetBorderInThisDirection(frontObject.transform.parent, inputDirection);
+            float difference = 0;
+            if(inputDirection == Vector3.right || inputDirection == Vector3.left) {
+                difference = frontObject.transform.position.x - border;
+            }
+            else
+            {
+                difference = frontObject.transform.position.y - border;
+            }
+
+            if(difference < 0.5)
+            {
+                rotate_gameobject_list.Add(frontObject.transform.parent.gameObject);
+                continue;
+            }
+            else
+            {
+                translate_gameobject_list.Add(frontObject.transform.parent.gameObject);
+            }
+            foreach (Transform child in frontObject.transform.parent)
+            {
+                visiting_gameObjects.Enqueue(child.gameObject);
+            }
+
+
+        } while (visitingGameObjects.Count != 0);
+        return true;
+    }
+
+    private float GetBorderInThisDirection(Transform parent, Vector3 inputDirection)
+    {
+        if (parent == null)
+        {
+            throw new ArgumentNullException(nameof(parent), "??????null");
+        }
+
+        if (parent.childCount == 0)
+        {
+            throw new InvalidOperationException("????????");
+        }
+
+        if (inputDirection == Vector3.zero)
+        {
+            throw new ArgumentException("??????????", nameof(inputDirection));
+        }
+
+        // ???????
+        Vector3 normalizedDirection = inputDirection.normalized;
+
+        // ???????????????
+        bool isHorizontal = Mathf.Abs(normalizedDirection.x) > Mathf.Abs(normalizedDirection.y);
+        Func<Transform, float> valueSelector;
+        Func<float, float, bool> comparer;
+
+        if (isHorizontal)
+        {
+            // ???????x?
+            if (normalizedDirection.x > 0)
+            {
+                // ????x????
+                valueSelector = child => child.position.x;
+                comparer = (a, b) => a > b;
+            }
+            else
+            {
+                // ????x????
+                valueSelector = child => child.position.x;
+                comparer = (a, b) => a < b;
+            }
+        }
+        else
+        {
+            // ???????y?
+            if (normalizedDirection.y > 0)
+            {
+                // ????y????
+                valueSelector = child => child.position.y;
+                comparer = (a, b) => a > b;
+            }
+            else
+            {
+                // ????y????
+                valueSelector = child => child.position.y;
+                comparer = (a, b) => a < b;
+            }
+        }
+
+        // ??????????????
+        Transform farthestChild = parent.GetChild(0);
+        float farthestValue = valueSelector(farthestChild);
+
+        for (int i = 1; i < parent.childCount; i++)
+        {
+            Transform child = parent.GetChild(i);
+            float currentValue = valueSelector(child);
+
+            if (comparer(currentValue, farthestValue))
+            {
+                farthestValue = currentValue;
+            }
+        }
+
+        return farthestValue;
     }
 
     private IEnumerator SnakeMove(Vector3 movedirection)

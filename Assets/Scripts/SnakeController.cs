@@ -103,5 +103,8 @@ public class SnakeController : MonoBehaviour
         
     }
 
-
+    public GameObject GetHead()
+    {
+        return segments[0];
+    }
 }
