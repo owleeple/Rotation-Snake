@@ -1,5 +1,7 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Text;
 using UnityEngine;
 
 public class LevelManagerV2 : MonoBehaviour
@@ -8,23 +10,16 @@ public class LevelManagerV2 : MonoBehaviour
     public SnakeController snakeController;
     private Vector3 inputDirection = Vector3.zero; // ????
     //private Vector3 moveDirection = Vector3.zero;
-    private bool acceptInput = true;
-    private bool turnAround = false;
     private bool isRotating = false;
-    private int frameCount = -2;
 
-
-
-    private bool straitWalk = false;
     private bool isMoving = false;
-    private bool portalCheck = false;
-    private int segmentsOfMove = 0;
+    private bool startMove = false;
+  //  private bool portalCheck = false;
 
-    // public int numberOfVerticalSlice = 5;
-    // public int numberOfHorizontalSlice = 10;
-    public Material material;
-    // private float bendRadius = 0.5f;
-    // private int bendSegments = 12;
+
+
+   // public Material material;
+
     public int speed = 2;
     public float angle;
     private List<(Vector3 pivot, Vector3 axis)> pivotAndAxis;
@@ -43,9 +38,9 @@ public class LevelManagerV2 : MonoBehaviour
 
 
     // portal movement
-    public GameObject portalA;
+/*    public GameObject portalA;
     public GameObject portalB;
-    private Dictionary<GameObject, GameObject> portal;
+    private Dictionary<GameObject, GameObject> portal;*/
 
     // Start is called before the first frame update
     void Start()
@@ -65,9 +60,9 @@ public class LevelManagerV2 : MonoBehaviour
         BoxPlayerLayer = LayerMask.GetMask("Box", "Player");
         MovementLayer = LayerMask.GetMask("Movement");
 
-        portal = new Dictionary<GameObject, GameObject>();
+/*        portal = new Dictionary<GameObject, GameObject>();
         portal.Add(portalA, portalB);
-        portal.Add(portalB, portalA);
+        portal.Add(portalB, portalA);*/
 
         rotateGameobjectlist = new List<GameObject>();
 
@@ -76,7 +71,7 @@ public class LevelManagerV2 : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (snakeController.moveDirection != Vector3.zero) return;
+        if (isMoving || isRotating) return;
         // ?????
         if (Input.GetKeyDown(KeyCode.W))
             inputDirection = Vector3.up;
@@ -100,19 +95,21 @@ public class LevelManagerV2 : MonoBehaviour
 
     private void FixedUpdate()
     {
-
+        Console.OutputEncoding = Encoding.UTF8;
         //center process
-        if (acceptInput && inputDirection != Vector3.zero && !isMoving && !isRotating)
+        if (inputDirection != Vector3.zero && !isMoving && !isRotating)
         {
             snakeController.moveDirection = inputDirection;
             inputDirection = Vector3.zero;
             isMoving = true;
+            startMove = true;
             // 
         }
 
 
-        if (isMoving)
+        if (startMove)
         {
+            startMove = false;
             StartCoroutine(SnakeMove(snakeController.moveDirection));
         }
 
