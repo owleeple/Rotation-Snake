@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -9,7 +10,7 @@ public class LevelManagerV2 : MonoBehaviour
     //private Vector3 moveDirection = Vector3.zero;
     private bool acceptInput = true;
     private bool turnAround = false;
-    private bool rotation = false;
+    private bool isRotating = false;
     private int frameCount = -2;
 
 
@@ -100,141 +101,39 @@ public class LevelManagerV2 : MonoBehaviour
     private void FixedUpdate()
     {
 
-
-        if (acceptInput && inputDirection != Vector3.zero)
+        //center process
+        if (acceptInput && inputDirection != Vector3.zero && !isMoving && !isRotating)
         {
             snakeController.moveDirection = inputDirection;
             inputDirection = Vector3.zero;
-            acceptInput = false;
-            // direction is backward, snake will move the whole body backward.
-            if (Vector3.Dot(snakeController.moveDirection, snakeController.currentDirections[1]) < -0.5)
-            {
-   
-
-
-            }
-            else
-            {
-                Collider2D col = snakeController.segments[0].GetComponent<Collider2D>();
-                // Detection of obstatcle in front
-                Vector2 dectectPos = col.bounds.center + snakeController.moveDirection * 0.8f;
-                // here do not detect layer of segments of pipe but parent of them.
-                Collider2D colrotate = Physics2D.OverlapCircle(dectectPos, 0.25f, TranslateLayer);
-
-                if (colrotate == null)
-                {
-                    // Detection of pipe walls. pipepos is the positions of pipewall.
-                    Vector2 pipeWallPos = col.bounds.center + snakeController.moveDirection * 0.5f;
-                    Collider2D colpipe = Physics2D.OverlapCircle(pipeWallPos, 0.3f, MovementLayer);
-                    if (colpipe != null)
-                    {
-
-                    }
-                }
-                else if (colrotate.gameObject.CompareTag("Wall") || colrotate.gameObject.CompareTag("Player"))
-                {
-                    acceptInput = true;
-                    snakeController.moveDirection = Vector3.zero;
-                    return;
-                }
-                else
-                {
-                    rotateGameobjectlist.Clear();
-                    // Physics2D.OverlapCircle(dectectPos, 0.25f,TranslateLayer) has detected parent of segments of pipe
-                    if (colrotate.CompareTag("Pipe"))
-                    {
-                        GetAllRotateGameobjects(colrotate.gameObject, rotateGameobjectlist);
-                    }
-                    else
-                    {
-                        GetAllRotateGameobjects(colrotate.transform.parent.gameObject, rotateGameobjectlist);
-                    }
-
-                    if (rotateGameobjectlist.Count != 0)
-                    {
-                        CaculateRotatePivotAndAxis(snakeController.moveDirection, pivotAndAxis, rotateGameobjectlist);
-                        rotation = true;
-                    }
-                    else
-                    {
-                        acceptInput = true;
-                        snakeController.moveDirection = Vector3.zero;
-                        return;
-                    }
-                }
-
-
-
-
-
-
-
-
-                if (Vector3.Dot(snakeController.moveDirection, snakeController.currentDirections[1]) < 0.5)
-                {
-
-                }
-                else
-                {
-                    // strait walk
-                    straitWalk = true;
-
-                }
-
-
-
-
-            }
+            isMoving = true;
+            // 
         }
-
-
-
-
 
 
         if (isMoving)
         {
-
+            StartCoroutine(SnakeMove(snakeController.moveDirection));
         }
 
-        // if colliding with something after rotation,destroy it and it do not portalcheck.
-        if (rotation)
+
+        if (isRotating)
         {
    
         }
 
-        if (portalCheck && !rotation)
-        {
-            //process portal. if gm is in position of portal do something.
-            // 1.process boxes and snake. update positions and directions.
-            foreach (var pair in portal)
-            {
-                GameObject key = pair.Key;
-                GameObject value = pair.Value;
-                Collider2D col = Physics2D.OverlapCircle(key.transform.position, 0.3f, portalColliderLayer);
-                Vector3 offset = value.transform.position - key.transform.position - snakeController.moveDirection;
-                Vector3 dir = offset.normalized;
-                float distance = offset.magnitude;
-                if (col != null && col.CompareTag("Box"))
-                {
-                    GameObject parent = col.transform.parent.gameObject;
-
-                    parent.GetComponent<BoxesController>().Move(dir, distance);
-                }
-                else if (col != null && col.CompareTag("Player"))
-                {
-        
-                }
-            }
-
-            //end ,set portalCheck and snakerender.moveDirection
-            portalCheck = false;
-            snakeController.moveDirection = Vector3.zero;
-        }
-
-
 
     }
+
+    private IEnumerator SnakeMove(Vector3 movedirection)
+    {
+
+        Coroutine snakeMove = StartCoroutine(snakeController.SnakeMove(snakeController.moveDirection));
+
+        yield return snakeMove;
+        isMoving = false;
+    }
+
 
     /// <summary>
     /// gameobject is geometricObject , parent of segments of pipe or player. rotates save all objects that possible be pipe or
