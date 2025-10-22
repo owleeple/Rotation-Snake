@@ -72,25 +72,23 @@ public class LevelManagerV2 : MonoBehaviour
     void Update()
     {
         if (isMoving || isRotating) return;
-        // ?????
-        if (Input.GetKeyDown(KeyCode.W))
-            inputDirection = Vector3.up;
-        if (Input.GetKeyDown(KeyCode.S))
-            inputDirection = Vector3.down;
-        if (Input.GetKeyDown(KeyCode.A))
-            inputDirection = Vector3.left;
-        if (Input.GetKeyDown(KeyCode.D))
-            inputDirection = Vector3.right;
+        Vector3 newDirection = Vector3.zero;
 
-        // ?????
-        if (Input.GetKeyUp(KeyCode.W) && inputDirection == Vector3.up)
-            inputDirection = Vector3.zero;
-        if (Input.GetKeyUp(KeyCode.S) && inputDirection == Vector3.down)
-            inputDirection = Vector3.zero;
-        if (Input.GetKeyUp(KeyCode.A) && inputDirection == Vector3.left)
-            inputDirection = Vector3.zero;
-        if (Input.GetKeyUp(KeyCode.D) && inputDirection == Vector3.right)
-            inputDirection = Vector3.zero;
+        // ???????????????????
+        if (Input.GetKey(KeyCode.W))
+            newDirection = Vector3.up;
+        else if (Input.GetKey(KeyCode.S))
+            newDirection = Vector3.down;
+        else if (Input.GetKey(KeyCode.A))
+            newDirection = Vector3.left;
+        else if (Input.GetKey(KeyCode.D))
+            newDirection = Vector3.right;
+
+        // ????????????????
+        if (newDirection != Vector3.zero && newDirection != inputDirection)
+        {
+            inputDirection = newDirection;
+        }
     }
 
     private void FixedUpdate()
