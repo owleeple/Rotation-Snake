@@ -20,7 +20,7 @@ public class SnakeController : MonoBehaviour
     public IEnumerator SnakeMove(Vector3 moveDirection)
     {
         Console.OutputEncoding = Encoding.UTF8;
-        Debug.Log("=== SnakeMove 开始 ===");
+
         // caculate movedirection of snakesegments and targetpositions of snakesegments.
         moveDirectionsOfSegments[0] = moveDirection;
         for (int i = 1; i < segments.Count; i++)
@@ -58,21 +58,21 @@ public class SnakeController : MonoBehaviour
         for (int i = 0; i < segments.Count; i++)
         {
             segments[i].transform.position = targetPositionsOfSegments[i];
-            Debug.Log($"Segment[{i}] 位置对齐完成: {segments[i].transform.position}");
+
         }
-        Debug.Log("位置对齐完成，等待FixedUpdate");
+
         yield return new WaitForFixedUpdate();
-        Debug.Log("FixedUpdate等待完成");
+
         for (int i = 0; i < bendObstruction.Count; i++)
         {
-            Debug.Log($"隐藏前 bendObstruction[{i}].activeSelf: {bendObstruction[i].activeSelf}");
+
             if (bendObstruction[i].activeSelf == true)
             {
                 bendObstruction[i].SetActive(false);
-                Debug.Log($"已隐藏 bendObstruction[{i}]");
+
             }
         }
-        Debug.Log("=== SnakeMove 结束 ===");
+
     }
 
     // Start is called before the first frame update
