@@ -9,6 +9,8 @@ public class LevelManagerV2 : MonoBehaviour
 {
 
     public SnakeController snakeController;
+    public float speed = 4;
+    public float angle;
     private Vector3 inputDirection = Vector3.zero; // ????
     //private Vector3 moveDirection = Vector3.zero;
   
@@ -27,8 +29,7 @@ public class LevelManagerV2 : MonoBehaviour
     private List<(Vector3 pivot, Vector3 axis)> pivotAndAxis;
     // public Material material;
 
-    public int speed = 2;
-    public float angle;
+
 
     private List<GameObject> frontobjects;
     private List<GameObject> boxesColorChanged;
@@ -78,6 +79,14 @@ public class LevelManagerV2 : MonoBehaviour
         visitingGameObjects = new Queue<GameObject>();
         boxTranslateCoroutines = new List<Coroutine>();
         boxRotationCoroutines = new List<Coroutine>();
+
+        // synchronize the speed of snake and all boxes
+        snakeController.SetSpeed(speed);
+        BoxesController[] allBoxControllers = FindObjectsOfType<BoxesController>();
+        foreach (BoxesController boxController in allBoxControllers)
+        {
+            boxController.SetSpeed(speed);
+        }
     }
 
     // Update is called once per frame;

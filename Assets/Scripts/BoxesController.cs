@@ -6,7 +6,7 @@ using static UnityEngine.Rendering.HableCurve;
 
 public class BoxesController : MonoBehaviour
 {
-    public float speed = 4;
+    private float speed = 4;
     private Vector3 targetPosition;
     // Start is called before the first frame update
     void Start()
@@ -36,5 +36,10 @@ public class BoxesController : MonoBehaviour
           yield return new WaitForFixedUpdate();
         }
         transform.position = targetPosition;
+    }
+
+    public void SetSpeed(float speedvalue)
+    {
+        speed = speedvalue;
     }
 }

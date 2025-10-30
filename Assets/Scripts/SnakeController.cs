@@ -15,7 +15,7 @@ public class SnakeController : MonoBehaviour
     private List<GameObject> bendObstruction;
     public GameObject segmentPrefab;
 
-    public float speed = 4;
+    private float speed = 4;
 
     public IEnumerator SnakeMove(Vector3 moveDirection)
     {
@@ -102,6 +102,11 @@ public class SnakeController : MonoBehaviour
     void Update()
     {
         
+    }
+
+    public void SetSpeed(float speedvalue)
+    {
+        speed = speedvalue;
     }
 
     public GameObject GetHead()
