@@ -11,9 +11,13 @@ public class LevelManagerV2 : MonoBehaviour
     public SnakeController snakeController;
     private Vector3 inputDirection = Vector3.zero; // ????
     //private Vector3 moveDirection = Vector3.zero;
-    private bool isRotating = false;
+  
     private bool isMoving = false;
     private bool startMove = false;
+    private bool startRotate = false;
+    private bool isRotating = false;
+    private bool startTranslate = false;
+    private bool isTranslating = false;
   //  private bool portalCheck = false;
 
   // check objects that is push by snake.
@@ -38,6 +42,9 @@ public class LevelManagerV2 : MonoBehaviour
     private LayerMask BoxPlayerLayer;
     private LayerMask MovementLayer;
 
+
+    private List<Coroutine> boxTranslateCoroutines;
+    private List<Coroutine> boxRotationCoroutines;
 
     // portal movement
 /*    public GameObject portalA;
@@ -69,12 +76,14 @@ public class LevelManagerV2 : MonoBehaviour
         rotateGameobjectlist = new List<GameObject>();
         translateGameobjectlist = new List<GameObject>();
         visitingGameObjects = new Queue<GameObject>();
+        boxTranslateCoroutines = new List<Coroutine>();
+        boxRotationCoroutines = new List<Coroutine>();
     }
 
-    // Update is called once per frame
+    // Update is called once per frame;
     void Update()
     {
-        if (isMoving || isRotating) return;
+        if (isMoving || isRotating || isTranslating) return;
         Vector3 newDirection = Vector3.zero;
 
         // ???????????????????
@@ -105,11 +114,30 @@ public class LevelManagerV2 : MonoBehaviour
             translateGameobjectlist.Clear();
             GameObject snakeHead = snakeController.GetHead();
             visitingGameObjects.Enqueue(snakeHead);
-            if (!CanMoveForward(inputDirection,visitingGameObjects,translateGameobjectlist,rotateGameobjectlist)) return;
+            if (!CanMoveForward(inputDirection, visitingGameObjects, translateGameobjectlist, rotateGameobjectlist)) {
+                inputDirection = Vector3.zero;
+                return; 
+            }
+            
+            // process snake movement
             snakeController.moveDirection = inputDirection;
             inputDirection = Vector3.zero;
-            isMoving = true;
             startMove = true;
+            isMoving = true;
+            // process rotation
+            if (rotateGameobjectlist.Count != 0)
+            {
+                isRotating = true;
+                startRotate = true;
+            }
+            // process translate.
+            if(translateGameobjectlist.Count != 0)
+            {
+                isTranslating = true;
+                startTranslate = true;
+               
+            }
+            
             // 
         }
 
@@ -121,12 +149,34 @@ public class LevelManagerV2 : MonoBehaviour
         }
 
 
-        if (isRotating)
+        if (startRotate)
         {
-   
+            startRotate = false;
+        }
+
+        if (startTranslate)
+        {
+            startTranslate = false;
+         StartCoroutine(BoxTranslate(snakeController.moveDirection,translateGameobjectlist));
         }
 
 
+    }
+
+    private IEnumerator BoxTranslate(Vector3 moveDirection,List<GameObject> translateBoxes)
+    {
+        boxTranslateCoroutines.Clear();
+        foreach (var box in translateBoxes)
+        {
+            Coroutine boxtranslateCoroutine = StartCoroutine(box.GetComponent<BoxesController>().BoxTranslate(moveDirection));
+            boxTranslateCoroutines.Add(boxtranslateCoroutine);
+        }
+
+        for (int i = 0; i < boxTranslateCoroutines.Count; i++)
+        {
+            yield return boxTranslateCoroutines[i];
+        }
+        isTranslating = false;
     }
 
     private bool CanMoveForward(Vector3 inputDirection,Queue<GameObject> visiting_gameObjects, List<GameObject> translate_gameobject_list, List<GameObject> rotate_gameobject_list)

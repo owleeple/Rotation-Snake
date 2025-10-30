@@ -32,6 +32,7 @@ public class SnakeController : MonoBehaviour
             targetPositionsOfSegments[i] = segments[i].transform.position + moveDirectionsOfSegments[i];
         }
 
+
         // bendObstruction process
         for (int i = 1; i < segments.Count; i++)
         {
@@ -61,7 +62,7 @@ public class SnakeController : MonoBehaviour
 
         }
 
-        yield return new WaitForFixedUpdate();
+     //   yield return new WaitForFixedUpdate();
 
         for (int i = 0; i < bendObstruction.Count; i++)
         {

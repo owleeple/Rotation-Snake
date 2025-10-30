@@ -1,9 +1,13 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using static UnityEngine.Rendering.HableCurve;
 
 public class BoxesController : MonoBehaviour
 {
+    public float speed = 4;
+    private Vector3 targetPosition;
     // Start is called before the first frame update
     void Start()
     {
@@ -19,5 +23,18 @@ public class BoxesController : MonoBehaviour
     public void Move(Vector3 dir, float distance)
     {
         gameObject.transform.position = gameObject.transform.position + dir.normalized * distance;
+    }
+
+    public IEnumerator BoxTranslate(Vector3 moveDirection)
+    {
+        float frameSpeed = speed / 50;
+        targetPosition = transform.position + moveDirection;
+        
+        while ((transform.position - targetPosition).magnitude > frameSpeed)
+        {
+          transform.position = transform.position + frameSpeed * moveDirection;
+          yield return new WaitForFixedUpdate();
+        }
+        transform.position = targetPosition;
     }
 }
