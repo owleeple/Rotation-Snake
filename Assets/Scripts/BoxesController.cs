@@ -42,4 +42,19 @@ public class BoxesController : MonoBehaviour
     {
         speed = speedvalue;
     }
+
+    public IEnumerator BoxRotation(Vector3 moveDirection, Vector3 pivot, Vector3 axis)
+    {
+        float angle = speed * 180 / 50;
+        float curAngle = 0;
+        while (Math.Abs(curAngle - 180) > angle)
+        {
+            transform.RotateAround(pivot, axis, angle);
+            curAngle += angle;
+            yield return new WaitForFixedUpdate();
+        }
+        // adjust to 180.
+        transform.RotateAround(pivot, axis, 180 - curAngle);
+      
+    }
 }

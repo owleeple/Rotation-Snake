@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
+using UnityEngine.UIElements;
 using static UnityEditor.PlayerSettings;
 
 public class LevelManagerV2 : MonoBehaviour
@@ -161,15 +162,35 @@ public class LevelManagerV2 : MonoBehaviour
         if (startRotate)
         {
             startRotate = false;
+            CaculateRotatePivotAndAxis(snakeController.moveDirection, pivotAndAxis, rotateGameobjectlist);
+            StartCoroutine(BoxRotation(snakeController.moveDirection, pivotAndAxis, rotateGameobjectlist));
         }
 
         if (startTranslate)
         {
             startTranslate = false;
-         StartCoroutine(BoxTranslate(snakeController.moveDirection,translateGameobjectlist));
+            StartCoroutine(BoxTranslate(snakeController.moveDirection,translateGameobjectlist));
         }
 
 
+    }
+
+    private IEnumerator BoxRotation(Vector3 moveDirection, List<(Vector3 pivot, Vector3 axis)> pivotAndAxis, List<GameObject> rotateGeometries)
+    {
+        boxRotationCoroutines.Clear();
+        for (int i = 0; i < rotateGeometries.Count; i++)
+        {
+            var box = rotateGeometries[i];
+            var (pivot, axis) = pivotAndAxis[i];
+            Coroutine boxtranslateCoroutine = StartCoroutine(box.GetComponent<BoxesController>().BoxRotation(moveDirection,pivot,axis));
+            boxRotationCoroutines.Add(boxtranslateCoroutine);
+        }
+
+        for (int i = 0; i < boxRotationCoroutines.Count; i++)
+        {
+            yield return boxRotationCoroutines[i];
+        }
+        isRotating = false;
     }
 
     private IEnumerator BoxTranslate(Vector3 moveDirection,List<GameObject> translateBoxes)
