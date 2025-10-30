@@ -211,11 +211,11 @@ public class LevelManagerV2 : MonoBehaviour
             float border = GetBorderInThisDirection(frontObject.transform.parent, inputDirection);
             float difference = 0;
             if(inputDirection == Vector3.right || inputDirection == Vector3.left) {
-                difference = frontObject.transform.position.x - border;
+                difference = Math.Abs(frontObject.transform.position.x - border);
             }
             else
             {
-                difference = frontObject.transform.position.y - border;
+                difference = Math.Abs(frontObject.transform.position.y - border);
             }
 
             if(difference < 0.5)
