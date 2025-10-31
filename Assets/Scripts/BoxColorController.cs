@@ -17,7 +17,7 @@ public class BoxColorController : MonoBehaviour
     }
 
     /// <summary>
-    /// ???????0 ~ 1?
+    /// roasted ratio : 0 ~ 1
     /// </summary>
     public void SetRatio(float ratio)
     {

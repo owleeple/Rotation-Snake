@@ -25,7 +25,7 @@ public class BoxesController : MonoBehaviour
         gameObject.transform.position = gameObject.transform.position + dir.normalized * distance;
     }
 
-    public IEnumerator BoxTranslate(Vector3 moveDirection)
+    public IEnumerator BoxTranslate(Vector3 moveDirection, List<GameObject> roastingBoxes)
     {
         float frameSpeed = speed / 50;
         targetPosition = transform.position + moveDirection;
@@ -33,9 +33,25 @@ public class BoxesController : MonoBehaviour
         while ((transform.position - targetPosition).magnitude > frameSpeed)
         {
           transform.position = transform.position + frameSpeed * moveDirection;
+            if(roastingBoxes.Count != 0)
+            {
+                float ratio = (transform.position - targetPosition).magnitude / moveDirection.magnitude;
+                foreach (var box in roastingBoxes)
+                {
+                    box.GetComponent<BoxColorController>().SetRatio(ratio);
+                }
+            }
+       
           yield return new WaitForFixedUpdate();
         }
         transform.position = targetPosition;
+        if (roastingBoxes.Count != 0)
+        {           
+            foreach (var box in roastingBoxes)
+            {
+                box.GetComponent<BoxColorController>().SetRatio(0);
+            }
+        }
     }
 
     public void SetSpeed(float speedvalue)

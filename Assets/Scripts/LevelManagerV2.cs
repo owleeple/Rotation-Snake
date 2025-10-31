@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Text;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.UIElements;
 using static UnityEditor.PlayerSettings;
@@ -33,7 +34,7 @@ public class LevelManagerV2 : MonoBehaviour
 
 
     private List<GameObject> frontobjects;
-    private List<GameObject> boxesColorChanged;
+    private List<GameObject> roastingBoxes;
     private LayerMask colorStripLayer;
     private LayerMask portalColliderLayer;
     private LayerMask colliderLayer;
@@ -58,7 +59,7 @@ public class LevelManagerV2 : MonoBehaviour
     {
         pivotAndAxis = new List<(Vector3 pivot, Vector3 axis)>();
         frontobjects = new List<GameObject>();
-        boxesColorChanged = new List<GameObject>();
+        roastingBoxes = new List<GameObject>();
         colorStripLayer = LayerMask.GetMask("ColorStrip");
         portalColliderLayer = LayerMask.GetMask("Box", "Player");
         colliderLayer = LayerMask.GetMask("Box", "Player", "Wall", "Pipe");
@@ -143,6 +144,20 @@ public class LevelManagerV2 : MonoBehaviour
             // process translate.
             if(translateGameobjectlist.Count != 0)
             {
+                // set the direction of roasted boxes that will become roasted color
+                for (int i = 0; i < translateGameobjectlist.Count; i++)
+                {
+                    foreach (Transform child in translateGameobjectlist[i].transform)
+                    {
+                        Vector2 centerOfGridEdge = child.position + snakeController.moveDirection * 0.5f;
+                        Collider2D colorStrip = Physics2D.OverlapCircle(centerOfGridEdge, 0.3f, colorStripLayer);
+                        if (colorStrip != null && colorStrip.CompareTag("ColorVariation"))
+                        {
+                            roastingBoxes.Add(child.gameObject);
+                            child.gameObject.GetComponent<BoxColorController>().SetDirection(snakeController.moveDirection);
+                        }
+                    }
+                }
                 isTranslating = true;
                 startTranslate = true;
                
@@ -169,7 +184,7 @@ public class LevelManagerV2 : MonoBehaviour
         if (startTranslate)
         {
             startTranslate = false;
-            StartCoroutine(BoxTranslate(snakeController.moveDirection,translateGameobjectlist));
+            StartCoroutine(BoxTranslate(snakeController.moveDirection,translateGameobjectlist,roastingBoxes));
         }
 
 
@@ -193,12 +208,12 @@ public class LevelManagerV2 : MonoBehaviour
         isRotating = false;
     }
 
-    private IEnumerator BoxTranslate(Vector3 moveDirection,List<GameObject> translateBoxes)
+    private IEnumerator BoxTranslate(Vector3 moveDirection,List<GameObject> translateBoxes, List<GameObject> roastingBoxes)
     {
         boxTranslateCoroutines.Clear();
         foreach (var box in translateBoxes)
         {
-            Coroutine boxtranslateCoroutine = StartCoroutine(box.GetComponent<BoxesController>().BoxTranslate(moveDirection));
+            Coroutine boxtranslateCoroutine = StartCoroutine(box.GetComponent<BoxesController>().BoxTranslate(moveDirection, roastingBoxes));
             boxTranslateCoroutines.Add(boxtranslateCoroutine);
         }
 
@@ -206,6 +221,7 @@ public class LevelManagerV2 : MonoBehaviour
         {
             yield return boxTranslateCoroutines[i];
         }
+        roastingBoxes.Clear();
         isTranslating = false;
     }
 
