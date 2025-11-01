@@ -12,11 +12,17 @@ Shader "Custom/AdvancedSplitBorderShader"
         _BorderColor("Border Color", Color) = (0,0,0,1)
         _BorderWidth("Border Width", Range(0,0.5)) = 0.05
 
-        // Border visibility control
+        // Border edge visibility control
         [Toggle] _ShowLeft("Show Left Border", Float) = 1
         [Toggle] _ShowRight("Show Right Border", Float) = 1
         [Toggle] _ShowTop("Show Top Border", Float) = 1
         [Toggle] _ShowBottom("Show Bottom Border", Float) = 1
+
+        // Border corner visibility control
+        [Toggle] _ShowTopLeft("Show Top Left Corner", Float) = 1
+        [Toggle] _ShowTopRight("Show Top Right Corner", Float) = 1
+        [Toggle] _ShowBottomLeft("Show Bottom Left Corner", Float) = 1
+        [Toggle] _ShowBottomRight("Show Bottom Right Corner", Float) = 1
 
         // Feature toggles
         [Toggle] _UseSplitColor("Use Split Color", Float) = 1
@@ -55,10 +61,18 @@ Shader "Custom/AdvancedSplitBorderShader"
             // Border properties
             float4 _BorderColor;
             float _BorderWidth;
+
+            // Edge visibility
             float _ShowLeft;
             float _ShowRight;
             float _ShowTop;
             float _ShowBottom;
+
+            // Corner visibility
+            float _ShowTopLeft;
+            float _ShowTopRight;
+            float _ShowBottomLeft;
+            float _ShowBottomRight;
 
             // Feature toggles
             float _UseSplitColor;
@@ -96,16 +110,37 @@ Shader "Custom/AdvancedSplitBorderShader"
                     return _ColorB;
             }
 
-            // Check if current position is in border area
+            // Check if current position is in edge area (excluding corners)
+            bool IsEdgeArea(float2 uv) {
+                bool leftEdge = _ShowLeft > 0.5 && uv.x < _BorderWidth&&
+                               uv.y >= _BorderWidth && uv.y <= (1.0 - _BorderWidth);
+
+                bool rightEdge = _ShowRight > 0.5 && uv.x > (1.0 - _BorderWidth) &&
+                                uv.y >= _BorderWidth && uv.y <= (1.0 - _BorderWidth);
+
+                bool bottomEdge = _ShowBottom > 0.5 && uv.y < _BorderWidth&&
+                                 uv.x >= _BorderWidth && uv.x <= (1.0 - _BorderWidth);
+
+                bool topEdge = _ShowTop > 0.5 && uv.y > (1.0 - _BorderWidth) &&
+                              uv.x >= _BorderWidth && uv.x <= (1.0 - _BorderWidth);
+
+                return leftEdge || rightEdge || bottomEdge || topEdge;
+            }
+
+            // Check if current position is in corner area
+            bool IsCornerArea(float2 uv) {
+                bool topLeft = _ShowTopLeft > 0.5 && uv.x < _BorderWidth&& uv.y >(1.0 - _BorderWidth);
+                bool topRight = _ShowTopRight > 0.5 && uv.x > (1.0 - _BorderWidth) && uv.y > (1.0 - _BorderWidth);
+                bool bottomLeft = _ShowBottomLeft > 0.5 && uv.x < _BorderWidth&& uv.y < _BorderWidth;
+                bool bottomRight = _ShowBottomRight > 0.5 && uv.x > (1.0 - _BorderWidth) && uv.y < _BorderWidth;
+
+                return topLeft || topRight || bottomLeft || bottomRight;
+            }
+
+            // Check if current position is in any border area
             bool IsBorderArea(float2 uv) {
                 if (_UseBorder < 0.5) return false;
-
-                bool left = _ShowLeft > 0.5 && uv.x < _BorderWidth;
-                bool right = _ShowRight > 0.5 && uv.x > 1.0 - _BorderWidth;
-                bool bottom = _ShowBottom > 0.5 && uv.y < _BorderWidth;
-                bool top = _ShowTop > 0.5 && uv.y > 1.0 - _BorderWidth;
-
-                return left || right || bottom || top;
+                return IsEdgeArea(uv) || IsCornerArea(uv);
             }
 
             fixed4 frag(v2f i) : SV_Target {

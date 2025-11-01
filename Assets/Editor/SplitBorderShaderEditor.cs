@@ -14,10 +14,18 @@ public class SplitBorderShaderEditor : ShaderGUI
         MaterialProperty useBorderProp = FindProperty("_UseBorder", properties);
         MaterialProperty borderColorProp = FindProperty("_BorderColor", properties);
         MaterialProperty borderWidthProp = FindProperty("_BorderWidth", properties);
+
+        // ?????
         MaterialProperty showLeftProp = FindProperty("_ShowLeft", properties);
         MaterialProperty showRightProp = FindProperty("_ShowRight", properties);
         MaterialProperty showTopProp = FindProperty("_ShowTop", properties);
         MaterialProperty showBottomProp = FindProperty("_ShowBottom", properties);
+
+        // ??????
+        MaterialProperty showTopLeftProp = FindProperty("_ShowTopLeft", properties);
+        MaterialProperty showTopRightProp = FindProperty("_ShowTopRight", properties);
+        MaterialProperty showBottomLeftProp = FindProperty("_ShowBottomLeft", properties);
+        MaterialProperty showBottomRightProp = FindProperty("_ShowBottomRight", properties);
 
         GUILayout.Label("Split Color Settings", EditorStyles.boldLabel);
 
@@ -32,13 +40,10 @@ public class SplitBorderShaderEditor : ShaderGUI
             materialEditor.ShaderProperty(colorBProp, colorBProp.displayName);
             materialEditor.ShaderProperty(directionProp, directionProp.displayName);
             materialEditor.ShaderProperty(ratioProp, ratioProp.displayName);
-
-            EditorGUILayout.HelpBox("Color A and Color B create a gradient split based on direction and ratio. Applies to inner area only.", MessageType.Info);
         }
         else
         {
             materialEditor.ShaderProperty(colorAProp, colorAProp.displayName);
-            EditorGUILayout.HelpBox("Using Color A as solid color for inner area.", MessageType.Info);
         }
 
         EditorGUILayout.Space();
@@ -55,14 +60,21 @@ public class SplitBorderShaderEditor : ShaderGUI
             materialEditor.ShaderProperty(borderWidthProp, borderWidthProp.displayName);
 
             EditorGUILayout.Space();
-            GUILayout.Label("Border Visibility", EditorStyles.boldLabel);
+            GUILayout.Label("Edge Visibility", EditorStyles.boldLabel);
             materialEditor.ShaderProperty(showLeftProp, showLeftProp.displayName);
             materialEditor.ShaderProperty(showRightProp, showRightProp.displayName);
             materialEditor.ShaderProperty(showTopProp, showTopProp.displayName);
             materialEditor.ShaderProperty(showBottomProp, showBottomProp.displayName);
+
+            EditorGUILayout.Space();
+            GUILayout.Label("Corner Visibility", EditorStyles.boldLabel);
+            materialEditor.ShaderProperty(showTopLeftProp, showTopLeftProp.displayName);
+            materialEditor.ShaderProperty(showTopRightProp, showTopRightProp.displayName);
+            materialEditor.ShaderProperty(showBottomLeftProp, showBottomLeftProp.displayName);
+            materialEditor.ShaderProperty(showBottomRightProp, showBottomRightProp.displayName);
         }
 
         EditorGUILayout.Space();
-        EditorGUILayout.HelpBox("Border uses solid color. Split colors apply only to inner area.", MessageType.Info);
+        EditorGUILayout.HelpBox("Edges and corners can be controlled independently", MessageType.Info);
     }
 }

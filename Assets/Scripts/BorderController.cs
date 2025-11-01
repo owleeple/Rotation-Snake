@@ -1,13 +1,19 @@
 using UnityEngine;
 
-[ExecuteInEditMode]  // ??????
+[ExecuteInEditMode]
 public class BorderController : MonoBehaviour
 {
-    [Header("Border Settings")]
+    [Header("Border Edge Settings")]
     public bool showLeftBorder = true;
     public bool showRightBorder = true;
     public bool showTopBorder = true;
     public bool showBottomBorder = true;
+
+    [Header("Border Corner Settings")]
+    public bool showTopLeftCorner = true;
+    public bool showTopRightCorner = true;
+    public bool showBottomLeftCorner = true;
+    public bool showBottomRightCorner = true;
 
     [Header("Border Appearance")]
     public Color borderColor = Color.black;
@@ -50,6 +56,12 @@ public class BorderController : MonoBehaviour
         propertyBlock.SetFloat("_ShowTop", showTopBorder ? 1 : 0);
         propertyBlock.SetFloat("_ShowBottom", showBottomBorder ? 1 : 0);
 
+        // ????????
+        propertyBlock.SetFloat("_ShowTopLeft", showTopLeftCorner ? 1 : 0);
+        propertyBlock.SetFloat("_ShowTopRight", showTopRightCorner ? 1 : 0);
+        propertyBlock.SetFloat("_ShowBottomLeft", showBottomLeftCorner ? 1 : 0);
+        propertyBlock.SetFloat("_ShowBottomRight", showBottomRightCorner ? 1 : 0);
+
         // ??????
         propertyBlock.SetColor("_BorderColor", borderColor);
         propertyBlock.SetFloat("_BorderWidth", borderWidth);
@@ -59,10 +71,8 @@ public class BorderController : MonoBehaviour
         renderer.SetPropertyBlock(propertyBlock);
     }
 
-    // ?Inspector????????????????????
     void OnValidate()
     {
-        // ????????????
         if (!Application.isPlaying)
         {
             UpdateMaterialProperties();
@@ -71,7 +81,6 @@ public class BorderController : MonoBehaviour
 
     void Update()
     {
-        // ????????????????
 #if UNITY_EDITOR
         if (!Application.isPlaying)
         {
@@ -80,14 +89,33 @@ public class BorderController : MonoBehaviour
 #endif
     }
 
-    // ???????????
-    public void SetBorderVisibility(bool left, bool right, bool top, bool bottom)
+    // ????
+    public void SetEdgeVisibility(bool left, bool right, bool top, bool bottom)
     {
         showLeftBorder = left;
         showRightBorder = right;
         showTopBorder = top;
         showBottomBorder = bottom;
         UpdateMaterialProperties();
+    }
+
+    public void SetCornerVisibility(bool topLeft, bool topRight, bool bottomLeft, bool bottomRight)
+    {
+        showTopLeftCorner = topLeft;
+        showTopRightCorner = topRight;
+        showBottomLeftCorner = bottomLeft;
+        showBottomRightCorner = bottomRight;
+        UpdateMaterialProperties();
+    }
+
+    public void SetAllEdges(bool visible)
+    {
+        SetEdgeVisibility(visible, visible, visible, visible);
+    }
+
+    public void SetAllCorners(bool visible)
+    {
+        SetCornerVisibility(visible, visible, visible, visible);
     }
 
     public void SetBorderColor(Color color)
@@ -102,7 +130,6 @@ public class BorderController : MonoBehaviour
         UpdateMaterialProperties();
     }
 
-    // ???????????
     [ContextMenu("Refresh Border Settings")]
     public void RefreshBorderSettings()
     {
