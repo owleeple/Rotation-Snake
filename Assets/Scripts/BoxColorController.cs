@@ -3,7 +3,9 @@ using UnityEngine;
 [RequireComponent(typeof(SpriteRenderer))]
 public class BoxColorController : MonoBehaviour
 {
-    private Material mat; // ???????????
+    private Material mat;
+    private int horizontalRotation = 1;
+    private int verticalRotation = 1;
 
     void Awake()
     {
@@ -25,6 +27,22 @@ public class BoxColorController : MonoBehaviour
     }
 
     /// <summary>
+    /// adjust roasted direction by horizontal rotation
+    /// </summary>
+    public void ReverseHorizontalRotation()
+    {
+        horizontalRotation = -horizontalRotation;
+    }
+
+    /// <summary>
+    /// adjust roasted direction by vertical rotation
+    /// </summary>
+    public void ReverseVerticalRotation()
+    {
+        verticalRotation = -verticalRotation;
+    }
+
+    /// <summary>
     /// ?????? (0=Right, 1=Left, 2=Up, 3=Down)
     /// </summary>
     public void SetDirection(Vector2 dir)
@@ -33,13 +51,13 @@ public class BoxColorController : MonoBehaviour
 
         int directionIndex = 0;
 
-        if (Vector2.Dot(dir, Vector2.right) > 0.9f) // ??
+        if (Vector2.Dot(dir * horizontalRotation, Vector2.right) > 0.9f) 
             directionIndex = 0;
-        else if (Vector2.Dot(dir, Vector2.left) > 0.9f) // ??
+        else if (Vector2.Dot(dir * horizontalRotation, Vector2.left) > 0.9f) 
             directionIndex = 1;
-        else if (Vector2.Dot(dir, Vector2.up) > 0.9f) // ??
+        else if (Vector2.Dot(dir * verticalRotation, Vector2.up) > 0.9f) 
             directionIndex = 2;
-        else if (Vector2.Dot(dir, Vector2.down) > 0.9f) // ??
+        else if (Vector2.Dot(dir * verticalRotation, Vector2.down) > 0.9f) 
             directionIndex = 3;
 
         mat.SetInt("_Direction", directionIndex);

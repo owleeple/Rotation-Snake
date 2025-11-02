@@ -177,6 +177,27 @@ public class LevelManagerV2 : MonoBehaviour
         if (startRotate)
         {
             startRotate = false;
+            if (Vector2.Dot(snakeController.moveDirection, Vector2.right) != 0.0f)
+            {
+                for (int i = 0; i < rotateGameobjectlist.Count; i++)
+                {
+                    foreach (Transform child in rotateGameobjectlist[i].transform)
+                    {
+                        child.gameObject.GetComponent<BoxColorController>().ReverseHorizontalRotation();
+
+                    }
+                }
+            }
+            else
+            {
+                for (int i = 0; i < rotateGameobjectlist.Count; i++)
+                {
+                    foreach (Transform child in rotateGameobjectlist[i].transform)
+                    {
+                        child.gameObject.GetComponent<BoxColorController>().ReverseVerticalRotation();
+                    }
+                }
+            }
             CaculateRotatePivotAndAxis(snakeController.moveDirection, pivotAndAxis, rotateGameobjectlist);
             StartCoroutine(BoxRotation(snakeController.moveDirection, pivotAndAxis, rotateGameobjectlist));
         }

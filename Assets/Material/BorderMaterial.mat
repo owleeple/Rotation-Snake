@@ -15,6 +15,7 @@ Material:
   - _SHOWLEFT_ON
   - _SHOWRIGHT_ON
   - _SHOWTOP_ON
+  - _USEINNERCOLOR_ON
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
@@ -40,9 +41,11 @@ Material:
     - _ShowTop: 1
     - _TopWidth: 0.05
     - _UseIndividualSettings: 0
+    - _UseInnerColor: 1
     m_Colors:
-    - _BorderColor: {r: 0, g: 0, b: 0, a: 1}
+    - _BorderColor: {r: 0.8679245, g: 0.38074043, b: 0.38074043, a: 1}
     - _BottomColor: {r: 0, g: 0, b: 0, a: 1}
+    - _InnerColor: {r: 0.88091445, g: 0.9150943, b: 0.07338022, a: 1}
     - _LeftColor: {r: 0, g: 0, b: 0, a: 1}
     - _RightColor: {r: 0, g: 0, b: 0, a: 1}
     - _TopColor: {r: 0, g: 0, b: 0, a: 1}
