@@ -8,7 +8,7 @@ Material:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: Yello
-  m_Shader: {fileID: 4800000, guid: 58817a44e11b44c4c877b1f933461836, type: 3}
+  m_Shader: {fileID: 4800000, guid: 67fffab36b472a24aa2e0947d4920a57, type: 3}
   m_ValidKeywords: []
   m_InvalidKeywords:
   - _BORDERONTOP_ON
@@ -55,6 +55,7 @@ Material:
     - _ShowTop: 1
     - _ShowTopLeft: 1
     - _ShowTopRight: 1
+    - _TransitionWidth: 0
     - _UseBorder: 1
     - _UseSplitColor: 1
     m_Colors:
