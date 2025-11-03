@@ -7,6 +7,7 @@ Shader "Custom/AdvancedSplitBorderShader"
         _ColorB("Color B", Color) = (1,0,0,1)    // Second color
         _Direction("Direction", Range(0,3)) = 0  // 0=Right,1=Left,2=Up,3=Down
         _Ratio("Ratio", Range(0,1)) = 0.5        // Split ratio
+        _TransitionWidth("Transition Width", Range(0,0.1)) = 0.01 // Smooth transition width
 
         // Border functionality
         _BorderColor("Border Color", Color) = (0,0,0,1)
@@ -31,9 +32,14 @@ Shader "Custom/AdvancedSplitBorderShader"
 
         SubShader
     {
-        Tags { "RenderType" = "Transparent" "Queue" = "Transparent" }
+        Tags {
+            "RenderType" = "Transparent"
+            "Queue" = "Transparent"
+            "IgnoreProjector" = "True"
+        }
         Blend SrcAlpha OneMinusSrcAlpha
         Cull Off
+        ZWrite Off
 
         Pass
         {
@@ -57,6 +63,7 @@ Shader "Custom/AdvancedSplitBorderShader"
             float4 _ColorB;
             int _Direction;
             float _Ratio;
+            float _TransitionWidth;
 
             // Border properties
             float4 _BorderColor;
@@ -85,29 +92,49 @@ Shader "Custom/AdvancedSplitBorderShader"
                 return o;
             }
 
-            // Get split color based on UV coordinates
+            // Get split color with smooth transition
             fixed4 GetSplitColor(float2 uv) {
+                // Clamp UV to [0,1] range for safety
+                float2 clampedUV = saturate(uv);
                 float t = 0;
 
                 // Calculate gradient factor based on direction
                 if (_Direction == 0) {          // Right (left -> right)
-                    t = uv.x;
+                    t = clampedUV.x;
                 }
                 else if (_Direction == 1) {     // Left (right -> left)
-                    t = 1.0 - uv.x;
+                    t = 1.0 - clampedUV.x;
                 }
                 else if (_Direction == 2) {     // Up (bottom -> top)
-                    t = uv.y;
+                    t = clampedUV.y;
                 }
                 else if (_Direction == 3) {     // Down (top -> bottom)
-                    t = 1.0 - uv.y;
+                    t = 1.0 - clampedUV.y;
                 }
 
-                // Return color based on UV position and ratio
-                if (t < _Ratio)
-                    return _ColorA;
+                // Apply smooth transition
+                float blend = 0;
+                if (_TransitionWidth > 0.0001) // Check if transition width is meaningful
+                {
+                    // Smooth transition between colors
+                    float transitionStart = _Ratio - _TransitionWidth;
+                    float transitionEnd = _Ratio + _TransitionWidth;
+
+                    // Clamp transition range to avoid artifacts
+                    transitionStart = max(transitionStart, 0);
+                    transitionEnd = min(transitionEnd, 1);
+
+                    blend = smoothstep(transitionStart, transitionEnd, t);
+                }
                 else
-                    return _ColorB;
+                {
+                    // Hard transition (original behavior)
+                    blend = step(_Ratio, t);
+                }
+
+                // Blend colors
+                fixed4 result = lerp(_ColorA, _ColorB, blend);
+                return result;
             }
 
             // Check if current position is in edge area (excluding corners)
@@ -153,7 +180,7 @@ Shader "Custom/AdvancedSplitBorderShader"
             if (_UseSplitColor > 0.5) {
                 return GetSplitColor(i.uv);
             }
-else {
+            else {
                 // If split color is disabled, use Color A as default
                 return _ColorA;
             }
@@ -162,5 +189,6 @@ else {
     }
     }
 
-        CustomEditor "SplitBorderShaderEditor"
+        FallBack "Transparent/VertexLit"
+            CustomEditor "AdvancedSplitBorderShaderEditor"
 }

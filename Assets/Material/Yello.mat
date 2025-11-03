@@ -43,7 +43,7 @@ Material:
     m_Floats:
     - PixelSnap: 0
     - _BorderOnTop: 1
-    - _BorderWidth: 0.1
+    - _BorderWidth: 0
     - _Direction: 0
     - _EnableExternalAlpha: 0
     - _Ratio: 1
