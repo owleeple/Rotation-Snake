@@ -121,4 +121,8 @@ public class SnakeController : MonoBehaviour
     {
         return segments[0];
     }
+    public Vector3 GetHeadDirection()
+    {
+        return segments[0].transform.position - segments[1].transform.position;
+    }
 }

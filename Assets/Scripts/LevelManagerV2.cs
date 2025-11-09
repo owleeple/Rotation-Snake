@@ -120,6 +120,11 @@ public class LevelManagerV2 : MonoBehaviour
         //center process
         if (inputDirection != Vector3.zero && !isMoving && !isRotating)
         {
+            if(Vector3.Dot(-inputDirection,snakeController.GetHeadDirection()) > 0.9f)
+            {
+                inputDirection = Vector3.zero;
+                return;
+            }
             visitingGameObjects.Clear();
             rotateGameobjectlist.Clear();
             translateGameobjectlist.Clear();
@@ -291,6 +296,7 @@ public class LevelManagerV2 : MonoBehaviour
 
     private bool CanMoveForward(Vector3 inputDirection,Queue<GameObject> visiting_gameObjects, List<GameObject> translate_gameobject_list, List<GameObject> rotate_gameobject_list)
     {
+
         bool isFirstTranslated = false;
         do
         {
