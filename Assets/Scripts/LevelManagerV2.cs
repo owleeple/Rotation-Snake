@@ -2,11 +2,8 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Text;
-using Unity.VisualScripting;
 using UnityEngine;
-using UnityEngine.EventSystems;
-using UnityEngine.UIElements;
-using static UnityEditor.PlayerSettings;
+
 
 public class LevelManagerV2 : MonoBehaviour
 {
@@ -34,23 +31,23 @@ public class LevelManagerV2 : MonoBehaviour
 
 
 
-    private List<GameObject> frontobjects;
+  //  private List<GameObject> frontobjects;
     private List<GameObject> roastingBoxes;
     private LayerMask colorStripLayer;
-    private LayerMask portalColliderLayer;
+   // private LayerMask portalColliderLayer;
     private LayerMask colliderLayer;
     private LayerMask TranslateLayer;
-    private LayerMask BoxLayer;
-    private LayerMask PlayerLayer;
+   // private LayerMask BoxLayer;
+   // private LayerMask PlayerLayer;
     private LayerMask PipeLayer;
     private LayerMask BoxPlayerLayer;
-    private LayerMask MovementLayer;
+   // private LayerMask MovementLayer;
 
 
     private List<Coroutine> boxTranslateCoroutines;
     private List<Coroutine> boxRotationCoroutines;
-    private bool IsRebound;
-    private Vector3 ReboundDirection = Vector3.zero;
+/*    private bool IsRebound;
+    private Vector3 ReboundDirection = Vector3.zero;*/
 
     // portal movement
     /*    public GameObject portalA;
@@ -61,19 +58,19 @@ public class LevelManagerV2 : MonoBehaviour
     void Start()
     {
         pivotAndAxis = new List<(Vector3 pivot, Vector3 axis)>();
-        frontobjects = new List<GameObject>();
+        //frontobjects = new List<GameObject>();
         roastingBoxes = new List<GameObject>();
         colorStripLayer = LayerMask.GetMask("ColorStrip");
-        portalColliderLayer = LayerMask.GetMask("Box", "Player");
+        //portalColliderLayer = LayerMask.GetMask("Box", "Player");
         colliderLayer = LayerMask.GetMask("Box", "Player", "Wall", "Pipe");
         // Movement is the layer of parent of segments of pipe that is different from segments of pipe.
         // Movement layer is created for the process of rotating pipe.
         TranslateLayer = LayerMask.GetMask("Box", "Player", "Wall", "Movement");
-        BoxLayer = LayerMask.GetMask("Box");
-        PlayerLayer = LayerMask.GetMask("Player");
+     //   BoxLayer = LayerMask.GetMask("Box");
+      //  PlayerLayer = LayerMask.GetMask("Player");
         PipeLayer = LayerMask.GetMask("Pipe");
         BoxPlayerLayer = LayerMask.GetMask("Box", "Player");
-        MovementLayer = LayerMask.GetMask("Movement");
+     //   MovementLayer = LayerMask.GetMask("Movement");
 
 /*        portal = new Dictionary<GameObject, GameObject>();
         portal.Add(portalA, portalB);
@@ -235,7 +232,7 @@ public class LevelManagerV2 : MonoBehaviour
         {
             yield return boxRotationCoroutines[i];
         }
-        IsRebound = false;
+        //IsRebound = false;
 
     }
 

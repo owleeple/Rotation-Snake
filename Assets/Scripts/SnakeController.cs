@@ -11,7 +11,7 @@ public class SnakeController : MonoBehaviour
     private List<Vector3> moveDirectionsOfSegments;
     private List<Vector3> targetPositionsOfSegments;
 
-    public List<GameObject> segments;
+    private List<GameObject> segments;
     private List<GameObject> bendObstruction;
     public GameObject segmentPrefab;
 
@@ -79,6 +79,11 @@ public class SnakeController : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        segments = new List<GameObject>();
+        foreach (Transform child in transform)
+        {
+            segments.Add(child.gameObject);
+        }
         moveDirectionsOfSegments = new List<Vector3>();
         targetPositionsOfSegments = new List<Vector3>();
         for (int i = 0; i < segments.Count; i++)
