@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Text;
 using Unity.VisualScripting;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UIElements;
 using static UnityEditor.PlayerSettings;
 
@@ -48,11 +49,13 @@ public class LevelManagerV2 : MonoBehaviour
 
     private List<Coroutine> boxTranslateCoroutines;
     private List<Coroutine> boxRotationCoroutines;
+    private bool IsRebound;
+    private Vector3 ReboundDirection = Vector3.zero;
 
     // portal movement
-/*    public GameObject portalA;
-    public GameObject portalB;
-    private Dictionary<GameObject, GameObject> portal;*/
+    /*    public GameObject portalA;
+        public GameObject portalB;
+        private Dictionary<GameObject, GameObject> portal;*/
 
     // Start is called before the first frame update
     void Start()
@@ -208,6 +211,31 @@ public class LevelManagerV2 : MonoBehaviour
             StartCoroutine(BoxTranslate(snakeController.moveDirection,translateGameobjectlist,roastingBoxes));
         }
 
+  /*      if (IsRebound)
+        {
+            pivotAndAxis.Clear();
+            CaculateRotatePivotAndAxis(ReboundDirection, pivotAndAxis, rotateGameobjectlist);
+            StartCoroutine(GeometryRebound(ReboundDirection, pivotAndAxis, rotateGameobjectlist));
+        }*/
+
+    }
+
+    private IEnumerator GeometryRebound(Vector3 moveDirection, List<(Vector3 pivot, Vector3 axis)> pivotAndAxis, List<GameObject> rotateGeometries)
+    {
+        boxRotationCoroutines.Clear();
+        for (int i = 0; i < rotateGeometries.Count; i++)
+        {
+            var box = rotateGeometries[i];
+            var (pivot, axis) = pivotAndAxis[i];
+            Coroutine boxtranslateCoroutine = StartCoroutine(box.GetComponent<BoxesController>().BoxRotation(moveDirection, pivot, axis));
+            boxRotationCoroutines.Add(boxtranslateCoroutine);
+        }
+
+        for (int i = 0; i < boxRotationCoroutines.Count; i++)
+        {
+            yield return boxRotationCoroutines[i];
+        }
+        IsRebound = false;
 
     }
 
@@ -227,6 +255,24 @@ public class LevelManagerV2 : MonoBehaviour
             yield return boxRotationCoroutines[i];
         }
         isRotating = false;
+/*        if (IsGeometryRebound(rotateGeometries))
+        {
+            IsRebound = true;
+            ReboundDirection = -moveDirection;
+        }*/
+    }
+
+    private bool IsGeometryRebound(List<GameObject> rotateGeometries)
+    {
+        foreach (var box in rotateGeometries)
+        {
+            var collider = Physics2D.OverlapCircle(box.transform.position, 0.3f);
+            if(collider.CompareTag("Wall") || collider.CompareTag("Player") || collider.CompareTag("Box"))
+            {
+                return true;
+            }
+        }
+        return false;
     }
 
     private IEnumerator BoxTranslate(Vector3 moveDirection,List<GameObject> translateBoxes, List<GameObject> roastingBoxes)
@@ -248,6 +294,7 @@ public class LevelManagerV2 : MonoBehaviour
 
     private bool CanMoveForward(Vector3 inputDirection,Queue<GameObject> visiting_gameObjects, List<GameObject> translate_gameobject_list, List<GameObject> rotate_gameobject_list)
     {
+        bool isFirstTranslated = false;
         do
         {
             GameObject gameobject = visiting_gameObjects.Dequeue();
@@ -264,6 +311,16 @@ public class LevelManagerV2 : MonoBehaviour
             if(frontObject.transform.parent == null)
             {
                 throw new ArgumentNullException(nameof(frontObject.transform.parent.gameObject), "object can not be null");
+            }
+
+            if(isFirstTranslated)
+            {
+                translate_gameobject_list.Add(frontObject.transform.parent.gameObject);
+                foreach (Transform child in frontObject.transform.parent)
+                {
+                    visiting_gameObjects.Enqueue(child.gameObject);
+                }
+                continue;
             }
 
             float border = GetBorderInThisDirection(frontObject.transform.parent, inputDirection);
@@ -284,6 +341,7 @@ public class LevelManagerV2 : MonoBehaviour
             else
             {
                 translate_gameobject_list.Add(frontObject.transform.parent.gameObject);
+                isFirstTranslated = true;
             }
             foreach (Transform child in frontObject.transform.parent)
             {

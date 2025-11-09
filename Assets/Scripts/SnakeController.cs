@@ -91,6 +91,9 @@ public class SnakeController : MonoBehaviour
         for (int i = 0; i < segments.Count - 1; i++)
         {
             GameObject obstruction = Instantiate(segmentPrefab);
+            SpriteRenderer renderer = obstruction.GetComponent<SpriteRenderer>();
+            renderer.sortingLayerName = "Default";
+            renderer.sortingOrder = 1;
             obstruction.SetActive(false);
             bendObstruction.Add(obstruction);
         }
