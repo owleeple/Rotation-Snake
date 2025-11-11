@@ -297,7 +297,7 @@ public class LevelManagerV2 : MonoBehaviour
     private bool CanMoveForward(Vector3 inputDirection,Queue<GameObject> visiting_gameObjects, List<GameObject> translate_gameobject_list, List<GameObject> rotate_gameobject_list)
     {
 
-        bool isFirstTranslated = false;
+       // bool isFirstTranslated = false;
         do
         {
             GameObject gameobject = visiting_gameObjects.Dequeue();
@@ -316,7 +316,7 @@ public class LevelManagerV2 : MonoBehaviour
                 throw new ArgumentNullException(nameof(frontObject.transform.parent.gameObject), "object can not be null");
             }
 
-            if(isFirstTranslated)
+  /*          if(isFirstTranslated)
             {
                 translate_gameobject_list.Add(frontObject.transform.parent.gameObject);
                 foreach (Transform child in frontObject.transform.parent)
@@ -324,7 +324,7 @@ public class LevelManagerV2 : MonoBehaviour
                     visiting_gameObjects.Enqueue(child.gameObject);
                 }
                 continue;
-            }
+            }*/
 
             float border = GetBorderInThisDirection(frontObject.transform.parent, inputDirection);
             float difference = 0;
@@ -344,7 +344,7 @@ public class LevelManagerV2 : MonoBehaviour
             else
             {
                 translate_gameobject_list.Add(frontObject.transform.parent.gameObject);
-                isFirstTranslated = true;
+              //  isFirstTranslated = true;
             }
             foreach (Transform child in frontObject.transform.parent)
             {
