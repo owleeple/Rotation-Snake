@@ -3,10 +3,22 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 
 public class LevelManagerV2 : MonoBehaviour
 {
+    [System.Serializable]
+    struct MoveAction
+    {
+        public List<Vector3> playerFrom;
+        public List<Transform> translateBoxes;      
+        public List<Vector3> translateBoxFrom;
+        public List<GameObject> rotateGeometries;
+        public List<(Vector3 pivot, Vector3 axis)> rotatePivotAndAxis;
+        public List<GameObject> roastedBoxes;
+    }
+    private Stack<MoveAction> undoStack;
 
     public SnakeController snakeController;
     public float speed = 4;
@@ -20,6 +32,7 @@ public class LevelManagerV2 : MonoBehaviour
     private bool isRotating = false;
     private bool startTranslate = false;
     private bool isTranslating = false;
+    private bool isUndo = false;
   //  private bool portalCheck = false;
 
   // check objects that is push by snake.
@@ -46,8 +59,10 @@ public class LevelManagerV2 : MonoBehaviour
 
     private List<Coroutine> boxTranslateCoroutines;
     private List<Coroutine> boxRotationCoroutines;
-/*    private bool IsRebound;
-    private Vector3 ReboundDirection = Vector3.zero;*/
+    private bool isGameOver;
+
+    /*    private bool IsRebound;
+private Vector3 ReboundDirection = Vector3.zero;*/
 
     // portal movement
     /*    public GameObject portalA;
@@ -57,6 +72,7 @@ public class LevelManagerV2 : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        undoStack = new Stack<MoveAction>();
         pivotAndAxis = new List<(Vector3 pivot, Vector3 axis)>();
         //frontobjects = new List<GameObject>();
         roastingBoxes = new List<GameObject>();
@@ -94,7 +110,11 @@ public class LevelManagerV2 : MonoBehaviour
     // Update is called once per frame;
     void Update()
     {
-        if (isMoving || isRotating || isTranslating) return;
+        if (isMoving || isRotating || isTranslating || isUndo)
+        {
+            return;
+        }
+     
         Vector3 newDirection = Vector3.zero;
 
         // ???????????????????
@@ -106,6 +126,16 @@ public class LevelManagerV2 : MonoBehaviour
             newDirection = Vector3.left;
         else if (Input.GetKey(KeyCode.D))
             newDirection = Vector3.right;
+        else if (Input.GetKeyDown(KeyCode.Z))
+        {
+            if(undoStack.Count != 0)
+            {
+                isUndo = true;
+                inputDirection = Vector3.zero;
+            }
+            
+        }
+           
 
         // ????????????????
         if (newDirection != Vector3.zero && newDirection != inputDirection)
@@ -118,7 +148,7 @@ public class LevelManagerV2 : MonoBehaviour
     {
         Console.OutputEncoding = Encoding.UTF8;
         //center process
-        if (inputDirection != Vector3.zero && !isMoving && !isRotating)
+        if (inputDirection != Vector3.zero && !isMoving && !isRotating && !isGameOver)
         {
             if(Vector3.Dot(-inputDirection,snakeController.GetHeadDirection()) > 0.9f)
             {
@@ -140,11 +170,31 @@ public class LevelManagerV2 : MonoBehaviour
             inputDirection = Vector3.zero;
             startMove = true;
             isMoving = true;
+
+            // set playerfrom of player
+            MoveAction moveaction = new MoveAction();
+            List<GameObject> segments = snakeController.GetSegments();
+            moveaction.playerFrom = new List<Vector3>();
+            moveaction.translateBoxes = new List<Transform>();
+            moveaction.translateBoxFrom = new List<Vector3>();
+            moveaction.rotateGeometries = new List<GameObject>();
+            moveaction.rotatePivotAndAxis = new List<(Vector3 pivot, Vector3 axis)>();
+            moveaction.roastedBoxes = new List<GameObject>();
+            for (int i = 0; i < segments.Count; i++)
+            {
+                moveaction.playerFrom.Add(segments[i].transform.position);
+            }
+
             // process rotation
             if (rotateGameobjectlist.Count != 0)
             {
                 isRotating = true;
                 startRotate = true;
+                CaculateRotatePivotAndAxis(snakeController.moveDirection, pivotAndAxis, rotateGameobjectlist);
+                // set boxes of moveaction
+                moveaction.rotateGeometries.AddRange(rotateGameobjectlist);
+                moveaction.rotatePivotAndAxis.AddRange(pivotAndAxis);
+
             }
             // process translate.
             if(translateGameobjectlist.Count != 0)
@@ -159,16 +209,28 @@ public class LevelManagerV2 : MonoBehaviour
                         if (colorStrip != null && colorStrip.CompareTag("ColorVariation"))
                         {
                             roastingBoxes.Add(child.gameObject);
+                            // set color of roastedboxes
+                            moveaction.roastedBoxes.Add(child.gameObject);
                             child.gameObject.GetComponent<BoxColorController>().SetDirection(snakeController.moveDirection);
                         }
                     }
                 }
                 isTranslating = true;
                 startTranslate = true;
-               
+
+                // set boxes of moveaction
+                foreach (var geometry in translateGameobjectlist)
+                {
+                    foreach (Transform box in geometry.transform)
+                    {
+                        moveaction.translateBoxes.Add(box);
+                        moveaction.translateBoxFrom.Add(box.transform.position);
+                    }
+                }
             }
-            
-            // 
+
+            // add moveaction to undostack;
+            undoStack.Push(moveaction);
         }
 
 
@@ -203,7 +265,7 @@ public class LevelManagerV2 : MonoBehaviour
                     }
                 }
             }
-            CaculateRotatePivotAndAxis(snakeController.moveDirection, pivotAndAxis, rotateGameobjectlist);
+           
             StartCoroutine(BoxRotation(snakeController.moveDirection, pivotAndAxis, rotateGameobjectlist));
         }
 
@@ -213,12 +275,52 @@ public class LevelManagerV2 : MonoBehaviour
             StartCoroutine(BoxTranslate(snakeController.moveDirection,translateGameobjectlist,roastingBoxes));
         }
 
-  /*      if (IsRebound)
+        /*      if (IsRebound)
+              {
+                  pivotAndAxis.Clear();
+                  CaculateRotatePivotAndAxis(ReboundDirection, pivotAndAxis, rotateGameobjectlist);
+                  StartCoroutine(GeometryRebound(ReboundDirection, pivotAndAxis, rotateGameobjectlist));
+              }*/
+
+        if (isUndo)
         {
-            pivotAndAxis.Clear();
-            CaculateRotatePivotAndAxis(ReboundDirection, pivotAndAxis, rotateGameobjectlist);
-            StartCoroutine(GeometryRebound(ReboundDirection, pivotAndAxis, rotateGameobjectlist));
-        }*/
+            isUndo = false;
+            isGameOver = false;
+            MoveAction undoMoveAction = undoStack.Pop();
+            var segments = snakeController.GetSegments();
+            for (int i = 0; i < undoMoveAction.playerFrom.Count; i++)
+            {
+                segments[i].transform.position = undoMoveAction.playerFrom[i];
+            }
+            if(undoMoveAction.translateBoxes.Count != 0)
+            {
+                for (int i = 0; i < undoMoveAction.translateBoxes.Count; i++)
+                {
+                    undoMoveAction.translateBoxes[i].transform.position = undoMoveAction.translateBoxFrom[i];
+                }
+            }
+
+            if(undoMoveAction.rotateGeometries.Count != 0)
+            {
+                for (int i = 0; i < undoMoveAction.rotateGeometries.Count; i++)
+                {
+                    var (pivot, axis) = undoMoveAction.rotatePivotAndAxis[i];
+                    undoMoveAction.rotateGeometries[i].transform.RotateAround(pivot,axis,180);
+                }
+            }
+
+
+            if(undoMoveAction.roastedBoxes.Count != 0)
+            {
+                for (int i = 0; i < undoMoveAction.roastedBoxes.Count; i++)
+                {
+                    GameObject roastbox = undoMoveAction.roastedBoxes[i];
+                    roastbox.GetComponent<BoxColorController>().SetRatio(1);
+                }
+            }
+
+
+        }
 
     }
 
@@ -257,11 +359,16 @@ public class LevelManagerV2 : MonoBehaviour
             yield return boxRotationCoroutines[i];
         }
         isRotating = false;
-/*        if (IsGeometryRebound(rotateGeometries))
+        /*        if (IsGeometryRebound(rotateGeometries))
+                {
+                    IsRebound = true;
+                    ReboundDirection = -moveDirection;
+                }*/
+
+        if (IsFallInSea(rotateGeometries))
         {
-            IsRebound = true;
-            ReboundDirection = -moveDirection;
-        }*/
+            isGameOver = true;
+        }
     }
 
     private bool IsGeometryRebound(List<GameObject> rotateGeometries)
@@ -291,6 +398,10 @@ public class LevelManagerV2 : MonoBehaviour
             yield return boxTranslateCoroutines[i];
         }
         roastingBoxes.Clear();
+        if (IsFallInSea(translateGameobjectlist))
+        {
+            isGameOver = true;
+        }
         isTranslating = false;
     }
 
@@ -438,7 +549,25 @@ public class LevelManagerV2 : MonoBehaviour
         Coroutine snakeMove = StartCoroutine(snakeController.SnakeMove(snakeController.moveDirection));
 
         yield return snakeMove;
+        var segments = snakeController.GetSegments();
+        if (IsFallInSea(segments))
+        {
+           isGameOver = true;
+        }
         isMoving = false;
+    }
+
+    private bool IsFallInSea(List<GameObject> segments)
+    {
+        foreach (var segment in segments)
+        {
+            Collider2D collider = Physics2D.OverlapCircle(segment.transform.position, 0.2f, LayerMask.GetMask("Ground"));
+            if(collider != null)
+            {
+                return false;
+            }
+        }
+        return true;
     }
 
 

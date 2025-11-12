@@ -125,4 +125,9 @@ public class SnakeController : MonoBehaviour
     {
         return segments[0].transform.position - segments[1].transform.position;
     }
+
+    public List<GameObject> GetSegments()
+    {
+        return segments;
+    }
 }
