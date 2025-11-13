@@ -365,9 +365,13 @@ private Vector3 ReboundDirection = Vector3.zero;*/
                     ReboundDirection = -moveDirection;
                 }*/
 
-        if (IsFallInSea(rotateGeometries))
+        foreach (GameObject geometry in rotateGameobjectlist)
         {
-            isGameOver = true;
+            if (IsFallInSea(geometry))
+            {
+                isGameOver = true;
+                break;
+            }
         }
     }
 
@@ -398,9 +402,13 @@ private Vector3 ReboundDirection = Vector3.zero;*/
             yield return boxTranslateCoroutines[i];
         }
         roastingBoxes.Clear();
-        if (IsFallInSea(translateGameobjectlist))
+        foreach (var geometry in translateGameobjectlist)
         {
-            isGameOver = true;
+            if (IsFallInSea(geometry))
+            {
+                isGameOver = true;
+                break;
+            }
         }
         isTranslating = false;
     }
@@ -408,7 +416,13 @@ private Vector3 ReboundDirection = Vector3.zero;*/
     private bool CanMoveForward(Vector3 inputDirection,Queue<GameObject> visiting_gameObjects, List<GameObject> translate_gameobject_list, List<GameObject> rotate_gameobject_list)
     {
 
-       // bool isFirstTranslated = false;
+        // bool isFirstTranslated = false;
+        GameObject head = visiting_gameObjects.Peek();
+        Collider2D colorstrip = Physics2D.OverlapCircle(head.transform.position + 0.5f * inputDirection, 0.3f, LayerMask.GetMask("ColorStrip"));
+        if(colorstrip != null)
+        {
+            return false;
+        }
         do
         {
             GameObject gameobject = visiting_gameObjects.Dequeue();
@@ -549,7 +563,7 @@ private Vector3 ReboundDirection = Vector3.zero;*/
         Coroutine snakeMove = StartCoroutine(snakeController.SnakeMove(snakeController.moveDirection));
 
         yield return snakeMove;
-        var segments = snakeController.GetSegments();
+        var segments = snakeController.gameObject;
         if (IsFallInSea(segments))
         {
            isGameOver = true;
@@ -557,11 +571,11 @@ private Vector3 ReboundDirection = Vector3.zero;*/
         isMoving = false;
     }
 
-    private bool IsFallInSea(List<GameObject> segments)
+    private bool IsFallInSea(GameObject gameObject)
     {
-        foreach (var segment in segments)
+        foreach (Transform child in gameObject.transform)
         {
-            Collider2D collider = Physics2D.OverlapCircle(segment.transform.position, 0.2f, LayerMask.GetMask("Ground"));
+            Collider2D collider = Physics2D.OverlapCircle(child.position, 0.2f, LayerMask.GetMask("Ground"));
             if(collider != null)
             {
                 return false;
